@@ -59,6 +59,27 @@ class TestMoedaIso:
             montar(bruto)
 
 
+class TestPrioridadeEmBranco:
+    """R4 [2] — o teste usava `""`, que cai no `Field(min_length=1)` do modelo e nunca
+    chega ao invariante. Uma prioridade só de espaços passava pelos dois."""
+
+    def test_prioridade_so_com_espacos_recusa(self):
+        """Mutação alvo: remover `if not rec.priority.strip()`.
+
+        `"   "` tem tamanho 3, então atravessa `min_length=1`. Sem o `.strip()`, ela
+        chegaria ao resultado público como se fosse prioridade declarada.
+        """
+        f = carregar_json("massa_f_recomendacoes_evidencias.facts.json")
+        f["recommendations"][0]["priority"] = "   "
+        with pytest.raises(AssemblyInvariantViolation):
+            montar(f)
+
+    def test_prioridade_com_conteudo_monta(self):
+        f = carregar_json("massa_f_recomendacoes_evidencias.facts.json")
+        f["recommendations"][0]["priority"] = "P1"
+        montar(f)
+
+
 class TestMoedaSemValorMedido:
     """R4 [3] — o ramo `elif ind.currency` não tinha teste negativo. Declarar moeda em
     algo não medido sugere um valor que não veio."""
