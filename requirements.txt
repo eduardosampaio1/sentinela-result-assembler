@@ -1,0 +1,4 @@
+# Runtime do NÚCLEO PURO. Nada de rede, banco, fila, ORM ou framework web:
+# o assembler é biblioteca. pydantic é a mesma camada de contratos já usada por
+# `sentinela` (engine + gateway) e por `sentinela-orchestrator` — versão fixada.
+pydantic==2.12.5

@@ -1,0 +1,37 @@
+{
+  "facts_schema_version": "analysis-facts-v1",
+  "measurement_contract_version": "measurement-9.9",
+  "identity": {
+    "analysis_id": "an-massa-e",
+    "job_id": null,
+    "analysis_run_id": null
+  },
+  "window": {
+    "analyzed_at": "2026-07-31T14:00:00Z",
+    "record_count": 10
+  },
+  "provenance": {
+    "engine_version": "sentinela-engine-e7d0703",
+    "analysis_version": null,
+    "dataset_fingerprint": null
+  },
+  "indicators": [
+    {
+      "id": "useful_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.5,
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "unit": "ratio",
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 10
+      }
+    }
+  ],
+  "dimensions": [],
+  "recommendations": [],
+  "evidence": []
+}

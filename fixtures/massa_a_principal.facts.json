@@ -1,0 +1,143 @@
+{
+  "facts_schema_version": "analysis-facts-v1",
+  "measurement_contract_version": "measurement-1.0",
+  "identity": {
+    "analysis_id": "an-massa-a",
+    "job_id": "job-massa-a",
+    "analysis_run_id": "run-massa-a"
+  },
+  "window": {
+    "analyzed_at": "2026-07-31T10:00:00Z",
+    "record_count": 100
+  },
+  "provenance": {
+    "engine_version": "sentinela-engine-e7d0703",
+    "analysis_version": "deep",
+    "dataset_fingerprint": "sha256:massa-a-sintetica"
+  },
+  "indicators": [
+    {
+      "id": "useful_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.8,
+      "unit": "ratio",
+      "denominator": {"kind": "analyzed_conversations", "value": 100},
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "outcome_coverage",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.85,
+      "unit": "ratio",
+      "denominator": {"kind": "analyzed_conversations", "value": 100},
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "intent_coverage_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.85,
+      "unit": "ratio",
+      "denominator": {"kind": "intents", "value": 20},
+      "calculation_version": "1.0",
+      "source": "engine.business.unit_economics.compute_tenant_metrics"
+    },
+    {
+      "id": "observed_conversations",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 100,
+      "unit": "conversations",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "useful_outcomes",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 80,
+      "unit": "conversations",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "actual_handoffs",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0,
+      "unit": "conversations",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "total_estimated_cost",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 10.0,
+      "unit": "currency",
+      "currency": "USD",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "observed_token_cost_total",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 10.0,
+      "unit": "currency",
+      "currency": "USD",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "observed_handoff_cost_total",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.0,
+      "unit": "currency",
+      "currency": "USD",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "cost_per_useful_outcome",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.125,
+      "unit": "currency",
+      "currency": "USD",
+      "denominator": {"kind": "useful_outcomes", "value": 80},
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "cost_per_session",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.1,
+      "unit": "currency",
+      "currency": "USD",
+      "denominator": {"kind": "analyzed_conversations", "value": 100},
+      "calculation_version": "1.0",
+      "source": "engine.business.unit_economics.compute_tenant_metrics"
+    }
+  ],
+  "dimensions": [],
+  "recommendations": [],
+  "evidence": []
+}

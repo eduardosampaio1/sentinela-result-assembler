@@ -1,0 +1,79 @@
+{
+  "facts_schema_version": "analysis-facts-v1",
+  "measurement_contract_version": "measurement-1.0",
+  "identity": {
+    "analysis_id": "an-massa-f",
+    "job_id": null,
+    "analysis_run_id": null
+  },
+  "window": {
+    "analyzed_at": "2026-07-31T15:00:00Z",
+    "record_count": 100
+  },
+  "provenance": {
+    "engine_version": "sentinela-engine-e7d0703",
+    "analysis_version": null,
+    "dataset_fingerprint": null
+  },
+  "indicators": [
+    {
+      "id": "useful_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.8,
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "unit": "ratio",
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 100
+      }
+    }
+  ],
+  "dimensions": [],
+  "recommendations": [
+    {
+      "id": "rec-c",
+      "title": "Revisar limiar de escalonamento",
+      "priority": "P3",
+      "order": 2,
+      "category": "operations",
+      "evidence_refs": []
+    },
+    {
+      "id": "rec-a",
+      "title": "Cobrir intencoes sem amostra",
+      "priority": "P1",
+      "order": 0,
+      "category": "coverage",
+      "evidence_refs": [
+        "ev-1"
+      ]
+    },
+    {
+      "id": "rec-b",
+      "title": "Reduzir custo por desfecho util",
+      "priority": "P2",
+      "order": 1,
+      "category": "economics",
+      "evidence_refs": [
+        "ev-2"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "ev-2",
+      "kind": "cost_outlier_group",
+      "observed_count": 7,
+      "label": "checkout"
+    },
+    {
+      "id": "ev-1",
+      "kind": "uncovered_intent_group",
+      "observed_count": 3,
+      "label": "segunda via"
+    }
+  ]
+}

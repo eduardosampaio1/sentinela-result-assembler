@@ -1,0 +1,69 @@
+{
+  "facts_schema_version": "analysis-facts-v1",
+  "measurement_contract_version": "measurement-1.0",
+  "identity": {
+    "analysis_id": "an-massa-c",
+    "job_id": null,
+    "analysis_run_id": null
+  },
+  "window": {
+    "analyzed_at": "2026-07-31T12:00:00Z",
+    "record_count": 1000
+  },
+  "provenance": {
+    "engine_version": "sentinela-engine-e7d0703",
+    "analysis_version": null,
+    "dataset_fingerprint": null
+  },
+  "indicators": [
+    {
+      "id": "total_estimated_cost",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.0042,
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "unit": "currency",
+      "currency": "USD"
+    },
+    {
+      "id": "cost_per_useful_outcome",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 5e-06,
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "unit": "currency",
+      "currency": "USD",
+      "denominator": {
+        "kind": "useful_outcomes",
+        "value": 800
+      }
+    },
+    {
+      "id": "useful_outcomes",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 800,
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "unit": "conversations"
+    },
+    {
+      "id": "observed_conversations",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 1000,
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "unit": "conversations"
+    }
+  ],
+  "dimensions": [],
+  "recommendations": [],
+  "evidence": []
+}

@@ -1,0 +1,102 @@
+{
+  "facts_schema_version": "analysis-facts-v1",
+  "measurement_contract_version": "measurement-1.0",
+  "identity": {
+    "analysis_id": "an-massa-d",
+    "job_id": null,
+    "analysis_run_id": null
+  },
+  "window": {
+    "analyzed_at": "2026-07-31T13:00:00Z",
+    "record_count": 50
+  },
+  "provenance": {
+    "engine_version": "sentinela-engine-e7d0703",
+    "analysis_version": null,
+    "dataset_fingerprint": null
+  },
+  "indicators": [
+    {
+      "id": "useful_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.6,
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "unit": "ratio",
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 50
+      }
+    },
+    {
+      "id": "intent_coverage_rate",
+      "kind": "ratio",
+      "availability": "partial",
+      "reason": "ok",
+      "value": 0.4,
+      "calculation_version": "1.0",
+      "source": "engine.business.unit_economics.compute_tenant_metrics",
+      "unit": "ratio",
+      "denominator": {
+        "kind": "intents",
+        "value": 25
+      },
+      "data_coverage": 0.5,
+      "observed_units": 25,
+      "expected_units": 50
+    },
+    {
+      "id": "cost_per_useful_outcome",
+      "kind": "currency",
+      "availability": "unavailable",
+      "reason": "insufficient_sample",
+      "value": null,
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "unit": "currency"
+    },
+    {
+      "id": "conversion_rate",
+      "kind": "ratio",
+      "availability": "not_evaluable",
+      "reason": "not_applicable",
+      "value": null,
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "unit": "ratio"
+    },
+    {
+      "id": "avg_variance_per_intent",
+      "kind": "scalar",
+      "availability": "failed",
+      "reason": "computation_error",
+      "value": null,
+      "calculation_version": "1.0",
+      "source": "engine.business.unit_economics.compute_tenant_metrics"
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "economic",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.72,
+      "data_coverage": null,
+      "calculation_version": "1.0",
+      "source": "core._engine_helpers.build_ai_health_measurement"
+    },
+    {
+      "id": "semantic",
+      "availability": "partial",
+      "reason": "missing_dimension",
+      "value": 0.5,
+      "data_coverage": 0.6,
+      "calculation_version": "1.0",
+      "source": "core._engine_helpers.build_ai_health_measurement"
+    }
+  ],
+  "recommendations": [],
+  "evidence": []
+}

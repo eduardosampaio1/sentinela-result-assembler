@@ -1,0 +1,508 @@
+{
+  "$defs": {
+    "AnalysisWindow": {
+      "additionalProperties": false,
+      "description": "Quando e sobre quanto a análise foi feita. Datas vêm como FATO.\n\n`analyzed_at` é obrigatório: o assembler não tem relógio. Fabricar a data aqui seria\na mentira mais barata de detectar e a mais cara de descobrir em produção.",
+      "properties": {
+        "analyzed_at": {
+          "minLength": 1,
+          "title": "Analyzed At",
+          "type": "string"
+        },
+        "record_count": {
+          "minimum": 0,
+          "title": "Record Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "analyzed_at",
+        "record_count"
+      ],
+      "title": "AnalysisWindow",
+      "type": "object"
+    },
+    "Availability": {
+      "description": "Estado da medição — NUNCA derivado do valor.\n\nEspelha `core/contracts/measurement.py::Availability` do domínio.",
+      "enum": [
+        "available",
+        "partial",
+        "unavailable",
+        "not_evaluable",
+        "failed"
+      ],
+      "title": "Availability",
+      "type": "string"
+    },
+    "CalculationProvenance": {
+      "additionalProperties": false,
+      "description": "De onde os números vieram. Vai para o manifesto interno; não para o público.",
+      "properties": {
+        "analysis_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Analysis Version"
+        },
+        "dataset_fingerprint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Fingerprint"
+        },
+        "engine_version": {
+          "minLength": 1,
+          "title": "Engine Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "engine_version"
+      ],
+      "title": "CalculationProvenance",
+      "type": "object"
+    },
+    "Denominator": {
+      "additionalProperties": false,
+      "description": "Sobre o QUE a razão foi calculada. Sem isto, `ratio` é um número solto.\n\nO discovery achou o custo de não ter isto: `outcome_coverage` (cobertura de campo\n`outcome`) e `intent_coverage_rate` (intenções cobertas) são ambos \"coverage 0.85\" na\nsuperfície, e significam coisas diferentes.",
+      "properties": {
+        "kind": {
+          "minLength": 1,
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ],
+      "title": "Denominator",
+      "type": "object"
+    },
+    "FactDimension": {
+      "additionalProperties": false,
+      "description": "Uma dimensão analítica (ex.: `semantic`, `economic`) já composta pelo domínio.",
+      "properties": {
+        "availability": {
+          "$ref": "#/$defs/Availability"
+        },
+        "calculation_version": {
+          "minLength": 1,
+          "title": "Calculation Version",
+          "type": "string"
+        },
+        "data_coverage": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Coverage"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason",
+          "default": "ok"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "id",
+        "availability",
+        "calculation_version",
+        "source"
+      ],
+      "title": "FactDimension",
+      "type": "object"
+    },
+    "FactEvidenceSummary": {
+      "additionalProperties": false,
+      "description": "Resumo de evidência — agregado e seguro por construção.\n\nNão carrega texto livre de conversa, prompt, resposta, caminho, chave nem id interno.\nO que passa é declarado campo a campo aqui; a validação de segurança confere de novo.",
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "minLength": 1,
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "observed_count": {
+          "minimum": 0,
+          "title": "Observed Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "observed_count"
+      ],
+      "title": "FactEvidenceSummary",
+      "type": "object"
+    },
+    "FactIndicator": {
+      "additionalProperties": false,
+      "description": "Um indicador já calculado pelo domínio.",
+      "properties": {
+        "availability": {
+          "$ref": "#/$defs/Availability"
+        },
+        "calculation_version": {
+          "minLength": 1,
+          "title": "Calculation Version",
+          "type": "string"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "data_coverage": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Coverage"
+        },
+        "denominator": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Denominator"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "expected_units": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Units"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/IndicatorKind"
+        },
+        "observed_units": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed Units"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason",
+          "default": "ok"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "availability",
+        "calculation_version",
+        "source"
+      ],
+      "title": "FactIndicator",
+      "type": "object"
+    },
+    "FactRecommendation": {
+      "additionalProperties": false,
+      "description": "Recomendação JÁ priorizada e ordenada pelo domínio.\n\nO discovery confirmou que `engine/recommendations/recommendation_ranker.py` já produz\n`priority` (P1..P4) e `priority_score`, e que `output_consolidator` já ordena. O\nassembler transporta — não escolhe a principal, não reordena por impacto inventado.",
+      "properties": {
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "evidence_refs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "order": {
+          "minimum": 0,
+          "title": "Order",
+          "type": "integer"
+        },
+        "priority": {
+          "minLength": 1,
+          "title": "Priority",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "priority",
+        "order"
+      ],
+      "title": "FactRecommendation",
+      "type": "object"
+    },
+    "FactsIdentity": {
+      "additionalProperties": false,
+      "description": "Identidade da análise. `analysis_id` é o único id que atravessa para o público.",
+      "properties": {
+        "analysis_id": {
+          "minLength": 1,
+          "title": "Analysis Id",
+          "type": "string"
+        },
+        "analysis_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Analysis Run Id"
+        },
+        "job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Id"
+        }
+      },
+      "required": [
+        "analysis_id"
+      ],
+      "title": "FactsIdentity",
+      "type": "object"
+    },
+    "IndicatorKind": {
+      "description": "Natureza do valor. Decide a formatação PERMITIDA — e nada além dela.\n\n`ratio` é a única autorização para virar percentual na apresentação. A conversão em\nsi NÃO acontece aqui nem no assembler: pertence ao frontend.",
+      "enum": [
+        "ratio",
+        "count",
+        "currency",
+        "scalar"
+      ],
+      "title": "IndicatorKind",
+      "type": "string"
+    },
+    "Reason": {
+      "description": "Motivo tipado, para máquina. Espelha `MeasurementReason` do domínio.",
+      "enum": [
+        "ok",
+        "no_input_data",
+        "insufficient_sample",
+        "single_group",
+        "missing_dimension",
+        "dependency_unavailable",
+        "not_applicable",
+        "computation_error"
+      ],
+      "title": "Reason",
+      "type": "string"
+    }
+  },
+  "$id": "analysis-facts-v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Envelope de entrada `analysis-facts-v1`.",
+  "properties": {
+    "dimensions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/FactDimension"
+      },
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "evidence": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/FactEvidenceSummary"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "facts_schema_version": {
+      "minLength": 1,
+      "title": "Facts Schema Version",
+      "type": "string"
+    },
+    "identity": {
+      "$ref": "#/$defs/FactsIdentity"
+    },
+    "indicators": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/FactIndicator"
+      },
+      "title": "Indicators",
+      "type": "array"
+    },
+    "measurement_contract_version": {
+      "minLength": 1,
+      "title": "Measurement Contract Version",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/CalculationProvenance"
+    },
+    "recommendations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/FactRecommendation"
+      },
+      "title": "Recommendations",
+      "type": "array"
+    },
+    "window": {
+      "$ref": "#/$defs/AnalysisWindow"
+    }
+  },
+  "required": [
+    "facts_schema_version",
+    "measurement_contract_version",
+    "identity",
+    "window",
+    "provenance"
+  ],
+  "title": "AnalysisFacts",
+  "type": "object"
+}
