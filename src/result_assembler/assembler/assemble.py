@@ -93,7 +93,7 @@ class AssemblyOutcome:
 def _publicar_indicador(ind: FactIndicator) -> PublicIndicator:
     defin = definicao_de(ind.id)
     if defin is None:  # pragma: no cover - `validate_facts` já recusou antes
-        raise UnknownIndicator(f"indicador não registrado: {ind.id}")
+        raise UnknownIndicator("indicador não registrado")
 
     estado = _ESTADO_PUBLICO[ind.availability]
     denom = (

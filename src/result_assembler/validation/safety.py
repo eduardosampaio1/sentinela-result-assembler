@@ -71,13 +71,23 @@ def _varrer(texto: str, onde: str) -> None:
 
 
 def validate_evidence_safety(facts: AnalysisFacts) -> None:
-    """Recusa evidências e rótulos que carreguem conteúdo não publicável."""
+    """Recusa qualquer TEXTO PUBLICADO que carregue conteúdo não publicável.
+
+    Inclui os **ids** (Codex R3 [1]): `evidence.id`, `recommendation.id` e
+    `evidence_refs` atravessam para o resultado público tal como chegaram. Um id é
+    string livre vinda de outro sistema — chamar de "id" não o torna seguro, e
+    `{"id": "Bearer sk-live-..."}` seria publicado sem que nada olhasse.
+    """
     for i, ev in enumerate(facts.evidence):
+        _varrer(ev.id, f"evidence[{i}].id")
         _varrer(ev.kind, f"evidence[{i}].kind")
         if ev.label is not None:
             _varrer(ev.label, f"evidence[{i}].label")
     for i, rec in enumerate(facts.recommendations):
+        _varrer(rec.id, f"recommendations[{i}].id")
         # O título da recomendação é texto público exibido ao usuário — mesma régua.
         _varrer(rec.title, f"recommendations[{i}].title")
         if rec.category is not None:
             _varrer(rec.category, f"recommendations[{i}].category")
+        for j, ref in enumerate(rec.evidence_refs):
+            _varrer(ref, f"recommendations[{i}].evidence_refs[{j}]")

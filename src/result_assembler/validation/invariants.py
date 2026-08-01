@@ -221,14 +221,16 @@ def _validar_indicadores(facts: AnalysisFacts) -> None:
     for i, ind in enumerate(facts.indicators):
         onde = f"indicators[{i}]"
         if ind.id in vistos:
-            raise DuplicateIndicator(f"id repetido: {ind.id}", location=onde)
+            # Sem ecoar o id (Codex R3 [3]): ele é texto livre do payload e a mensagem
+            # costuma acabar em log. A localização basta para depurar.
+            raise DuplicateIndicator("id de indicador repetido", location=onde)
         vistos.add(ind.id)
 
         defin = definicao_de(ind.id)
         if defin is None:
             # Fail-closed. Aceitar um objeto arbitrário aqui é como o contrato morre:
             # um campo novo do domínio viraria indicador público sem ninguém decidir.
-            raise UnknownIndicator(f"indicador não registrado: {ind.id}", location=onde)
+            raise UnknownIndicator("indicador não registrado", location=onde)
 
         _validar_coerencia_disponibilidade(ind, onde)
         _validar_contra_definicao(ind, defin, onde)
@@ -246,9 +248,9 @@ def _validar_dimensoes(facts: AnalysisFacts) -> None:
     for i, dim in enumerate(facts.dimensions):
         onde = f"dimensions[{i}]"
         if dim.id not in SUPPORTED_DIMENSION_IDS:
-            raise UnknownIndicator(f"dimensão não registrada: {dim.id}", location=onde)
+            raise UnknownIndicator("dimensão não registrada", location=onde)
         if dim.id in vistas:
-            raise DuplicateIndicator(f"dimensão repetida: {dim.id}", location=onde)
+            raise DuplicateIndicator("dimensão repetida", location=onde)
         vistas.add(dim.id)
 
         if dim.calculation_version not in SUPPORTED_DIMENSION_CALCULATION_VERSIONS:
@@ -299,13 +301,13 @@ def _validar_recomendacoes(facts: AnalysisFacts) -> None:
     for i, rec in enumerate(facts.recommendations):
         onde = f"recommendations[{i}]"
         if rec.id in ids:
-            raise AssemblyInvariantViolation(f"recomendação repetida: {rec.id}", location=onde)
+            raise AssemblyInvariantViolation("id de recomendação repetido", location=onde)
         ids.add(rec.id)
         if rec.order in ordens:
             # Ordem repetida tornaria a publicação dependente da ordem de chegada — e aí
             # o mesmo fato geraria bytes diferentes.
             raise AssemblyInvariantViolation(
-                f"ordem repetida: {rec.order}", location=f"{onde}.order"
+                "ordem de recomendação repetida", location=f"{onde}.order"
             )
         ordens.add(rec.order)
         if not rec.priority.strip():
@@ -313,7 +315,7 @@ def _validar_recomendacoes(facts: AnalysisFacts) -> None:
         for ref in rec.evidence_refs:
             if ref not in evidencias:
                 raise AssemblyInvariantViolation(
-                    f"evidence_ref sem evidência correspondente: {ref}",
+                    "evidence_ref sem evidência correspondente",
                     location=f"{onde}.evidence_refs",
                 )
 
@@ -323,7 +325,7 @@ def _validar_evidencias(facts: AnalysisFacts) -> None:
     for i, ev in enumerate(facts.evidence):
         onde = f"evidence[{i}]"
         if ev.id in ids:
-            raise AssemblyInvariantViolation(f"evidência repetida: {ev.id}", location=onde)
+            raise AssemblyInvariantViolation("id de evidência repetido", location=onde)
         ids.add(ev.id)
 
 

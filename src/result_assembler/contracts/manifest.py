@@ -4,10 +4,19 @@ Separado do resultado público de propósito: é o registro técnico de COMO a m
 aconteceu — o que entrou, o que ficou de fora e por quê. Serve a operação e auditoria,
 não ao consumidor final.
 
-Regra: o manifesto explica **decisões**, não **conteúdo**. Ele registra que o indicador
-`x` foi aceito e que `y` foi excluído por não ter mapeamento público; não registra os
-valores, os textos das recomendações nem as evidências. Assim o manifesto pode ir para
-log/telemetria sem virar o vazamento que o resultado público evita.
+Regra: o manifesto explica **decisões**, não **conteúdo**. Ele registra quais indicadores
+foram aceitos e quais campos ficaram retidos; não registra valores medidos, textos de
+recomendação nem evidências.
+
+**Ele NÃO é publicável** (Codex R3 [2]). Carregar `job_id`, `engine_version` e
+`dataset_fingerprint` é o PROPÓSITO dele — sem esses ids não há proveniência técnica.
+Esses identificadores podem embutir nome de tenant, de worker ou de ambiente. Portanto:
+
+- seguro no sentido de **não carregar conteúdo analítico**;
+- **dado interno** para todo o resto — quem enviar a telemetria trata com a mesma
+  classificação de um log de infraestrutura, não como documento de cliente.
+
+A promessa anterior ("pode ir para log/telemetria") era mais forte que o código.
 """
 
 from __future__ import annotations
