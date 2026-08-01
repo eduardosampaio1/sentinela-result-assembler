@@ -33,6 +33,7 @@ from result_assembler.errors import (
 from result_assembler.registry.indicators import (
     SUPPORTED_DIMENSION_CALCULATION_VERSIONS,
     SUPPORTED_DIMENSION_IDS,
+    SUPPORTED_DIMENSION_SOURCES,
     IndicatorDefinition,
     definicao_de,
 )
@@ -111,15 +112,9 @@ def _validar_unidades_observadas(ind: FactIndicator, onde: str) -> None:
     com `observed=25` e `expected=1000` e ninguém notaria — a cobertura publicada estaria
     contando uma história que os próprios contadores desmentem.
     """
+    # `observed_units >= 0` e `expected_units > 0` são restrições do Field (e portanto
+    # do JSON Schema publicado). O que sobra aqui é o que só se vê com os dois juntos.
     obs, esp = ind.observed_units, ind.expected_units
-    if obs is not None and obs < 0:
-        raise AssemblyInvariantViolation(
-            "observed_units não pode ser negativo", location=f"{onde}.observed_units"
-        )
-    if esp is not None and esp <= 0:
-        raise AssemblyInvariantViolation(
-            "expected_units precisa ser positivo", location=f"{onde}.expected_units"
-        )
     if obs is None or esp is None:
         return
     if obs > esp:
@@ -261,6 +256,11 @@ def _validar_dimensoes(facts: AnalysisFacts) -> None:
                 "calculation_version fora das versões aceitas para dimensões",
                 location=f"{onde}.calculation_version",
             )
+        if dim.source not in SUPPORTED_DIMENSION_SOURCES:
+            raise InvalidValue(
+                "source não é uma origem analítica aceita para dimensões",
+                location=f"{onde}.source",
+            )
 
         tem_valor = dim.value is not None
         if dim.availability in _COM_VALOR and not tem_valor:
@@ -289,11 +289,6 @@ def _validar_dimensoes(facts: AnalysisFacts) -> None:
             raise AssemblyInvariantViolation(
                 "cobertura declarada fora de partial exige data_coverage=1.0",
                 location=f"{onde}.data_coverage",
-            )
-        # Dimensão é composto normalizado 0..1 no domínio (`aggregate_health`).
-        if tem_valor and not (0.0 <= float(dim.value or 0.0) <= 1.0):
-            raise InvalidValue(
-                "dimensão precisa estar em [0, 1]", location=f"{onde}.value"
             )
 
 

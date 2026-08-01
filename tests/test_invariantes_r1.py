@@ -15,10 +15,11 @@ from result_assembler import (
     AssemblyInvariantViolation,
     DuplicateIndicator,
     InvalidUnit,
-    InvalidValue,
+    SchemaMismatch,
     UnknownIndicator,
     UnsupportedMeasurementVersion,
     assemble,
+    parse_facts,
 )
 
 _HEALTH = "core._engine_helpers.build_ai_health_measurement"
@@ -79,8 +80,11 @@ class TestDimensoesPassamPelaMesmaRegua:
             montar(com_dimensao(bruto, value=None))
 
     def test_valor_fora_de_zero_um_recusa(self, bruto):
-        with pytest.raises(InvalidValue):
-            montar(com_dimensao(bruto, value=1.4))
+        """A faixa 0..1 da dimensão migrou para o Field — e daí para o JSON Schema
+        publicado (Codex R2 [3]). A recusa acontece uma camada antes, e `parse_facts`
+        a entrega como `SchemaMismatch`, da família da biblioteca."""
+        with pytest.raises(SchemaMismatch):
+            parse_facts(com_dimensao(bruto, value=1.4))
 
     def test_partial_sem_cobertura_recusa(self, bruto):
         with pytest.raises(AssemblyInvariantViolation):
@@ -160,8 +164,9 @@ class TestContadoresCoerentesComACobertura:
             montar(com_indicador(bruto, observed_units=60, expected_units=50))
 
     def test_esperado_zero_recusa(self, bruto):
-        with pytest.raises(AssemblyInvariantViolation):
-            montar(com_indicador(bruto, observed_units=0, expected_units=0))
+        """`expected_units > 0` também virou restrição do Field."""
+        with pytest.raises(SchemaMismatch):
+            parse_facts(com_indicador(bruto, observed_units=0, expected_units=0))
 
     def test_contadores_coerentes_montam(self, bruto):
         montar(

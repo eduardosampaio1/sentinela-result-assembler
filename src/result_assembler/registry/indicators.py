@@ -265,6 +265,12 @@ SUPPORTED_DIMENSION_IDS: frozenset[str] = frozenset(
 #: declaração de versão não há como recusar um composto produzido por fórmula antiga.
 SUPPORTED_DIMENSION_CALCULATION_VERSIONS: frozenset[str] = _V1
 
+#: Origem analítica aceita para dimensões. Indicadores já exigiam origem registrada; a
+#: dimensão não exigia (Codex R2 [1]), e é o OUTRO tipo de valor que vai para o público.
+SUPPORTED_DIMENSION_SOURCES: frozenset[str] = frozenset(
+    {"core._engine_helpers.build_ai_health_measurement"}
+)
+
 
 def definicao_de(internal_id: str) -> IndicatorDefinition | None:
     """Definição pública do fato, ou `None` se ele não é um indicador contratado."""

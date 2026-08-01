@@ -95,7 +95,10 @@ class Denominator(FactsModel):
     """
 
     kind: str = Field(min_length=1)  # ex.: "records", "intents", "sessions"
-    value: float
+    #: `gt=0` no FIELD, não em validador: assim a restrição atravessa para o JSON Schema
+    #: publicado (Codex R2 [2]). Um schema mais permissivo que o modelo é pior que schema
+    #: nenhum — o produtor valida contra ele, passa, e só descobre na biblioteca.
+    value: float = Field(gt=0)
 
     @field_validator("value", mode="before")
     @classmethod
@@ -104,9 +107,10 @@ class Denominator(FactsModel):
 
     @field_validator("value")
     @classmethod
-    def _positivo_e_finito(cls, v: float) -> float:
-        if isinstance(v, bool) or not math.isfinite(float(v)) or float(v) <= 0:
-            raise ValueError("denominador precisa ser número finito e maior que zero")
+    def _finito(cls, v: float) -> float:
+        # JSON não tem NaN/Infinity, mas a entrada em Python pode ter.
+        if not math.isfinite(float(v)):
+            raise ValueError("denominador precisa ser finito")
         return float(v)
 
 
@@ -124,10 +128,11 @@ class FactIndicator(FactsModel):
     currency: str | None = None
     denominator: Denominator | None = None
 
-    #: Fração da entrada efetivamente medida (obrigatória em `partial`).
-    data_coverage: float | None = None
-    observed_units: int | None = None
-    expected_units: int | None = None
+    #: Fração da entrada efetivamente medida (obrigatória em `partial`). A faixa fica no
+    #: FIELD para o JSON Schema publicado carregá-la (Codex R2 [3]).
+    data_coverage: float | None = Field(default=None, ge=0.0, le=1.0)
+    observed_units: int | None = Field(default=None, ge=0)
+    expected_units: int | None = Field(default=None, gt=0)
 
     #: Versão do CÁLCULO que produziu este valor — não a do contrato nem a do assembler.
     calculation_version: str = Field(min_length=1)
@@ -150,13 +155,12 @@ class FactIndicator(FactsModel):
 
     @field_validator("data_coverage")
     @classmethod
-    def _cobertura_em_zero_um(cls, v: float | None) -> float | None:
-        if v is None:
-            return None
-        f = float(v)
-        if not math.isfinite(f) or not (0.0 <= f <= 1.0):
-            raise ValueError("data_coverage precisa estar em [0, 1]")
-        return f
+    def _cobertura_finita(cls, v: float | None) -> float | None:
+        # A faixa está no Field (e portanto no schema); aqui sobra só o que JSON não
+        # consegue expressar.
+        if v is not None and not math.isfinite(float(v)):
+            raise ValueError("data_coverage precisa ser finito")
+        return None if v is None else float(v)
 
 
 class FactDimension(FactsModel):
@@ -165,8 +169,9 @@ class FactDimension(FactsModel):
     id: str = Field(min_length=1)
     availability: Availability
     reason: Reason = Reason.OK
-    value: float | None = None
-    data_coverage: float | None = None
+    #: Dimensão é composto normalizado 0..1 no domínio (`aggregate_health`).
+    value: float | None = Field(default=None, ge=0.0, le=1.0)
+    data_coverage: float | None = Field(default=None, ge=0.0, le=1.0)
     calculation_version: str = Field(min_length=1)
     source: str = Field(min_length=1)
 

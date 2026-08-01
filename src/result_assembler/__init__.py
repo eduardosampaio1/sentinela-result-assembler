@@ -8,14 +8,20 @@ analítico e devolve o documento público canônico mais um manifesto interno.
 
 Uso mínimo::
 
-    from result_assembler import assemble, AnalysisFacts, serialize_canonical
+    from result_assembler import assemble, parse_facts, serialize_canonical
 
-    facts = AnalysisFacts.model_validate(payload)
-    outcome = assemble(facts)
+    facts = parse_facts(payload)          # levanta SchemaMismatch (AssemblyError)
+    outcome = assemble(facts)             # levanta AssemblyError específico
     bytes_canonicos = serialize_canonical(outcome.public_result)
+
+`parse_facts` é a porta recomendada: `AnalysisFacts.model_validate` levanta
+`pydantic.ValidationError`, que NÃO é `AssemblyError` — um consumidor que capturasse só
+as categorias tipadas da biblioteca perderia campo extra, `NaN` e tipo errado.
 """
 
 from __future__ import annotations
+
+from pydantic import ValidationError
 
 from result_assembler.assembler.assemble import AssemblyOutcome, assemble
 from result_assembler.contracts.facts import (
@@ -82,6 +88,25 @@ from result_assembler.version import (
 )
 
 
+def parse_facts(payload: object) -> AnalysisFacts:
+    """`dict` cru → `AnalysisFacts`, com erro da FAMÍLIA da biblioteca.
+
+    Existe porque `model_validate` levanta `pydantic.ValidationError` (Codex R2 [5]):
+    campo extra, `NaN`, bool ou string numérica escapariam de um `except AssemblyError`.
+    A mensagem do pydantic é resumida para não ecoar o payload no log.
+    """
+    try:
+        return AnalysisFacts.model_validate(payload)
+    except ValidationError as exc:
+        locais = sorted(
+            {".".join(str(p) for p in e["loc"]) for e in exc.errors()}
+        )
+        raise SchemaMismatch(
+            f"payload não corresponde a {FACTS_SCHEMA_VERSION}",
+            location="; ".join(locais[:5]),
+        ) from None
+
+
 def validate_result(result: PublicResult) -> None:
     """Revalida um resultado público já montado.
 
@@ -141,6 +166,7 @@ __all__ = [
     "VersionsSeen",
     "assemble",
     "checksum",
+    "parse_facts",
     "serialize_canonical",
     "to_canonical_dict",
     "validate_evidence_safety",

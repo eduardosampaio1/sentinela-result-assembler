@@ -166,7 +166,11 @@ def assemble(facts: AnalysisFacts) -> AssemblyOutcome:
             title=r.title,
             priority=r.priority,
             category=r.category,
-            evidence_refs=r.evidence_refs,
+            # ORDENADO: `evidence_refs` é um CONJUNTO de referências, não uma sequência
+            # com significado — diferente de `recommendations`, onde `order` é intenção
+            # declarada do domínio. Sem ordenar (Codex R2 [4]), duas entradas
+            # semanticamente iguais gerariam checksums diferentes.
+            evidence_refs=tuple(sorted(r.evidence_refs)),
         )
         for r in sorted(facts.recommendations, key=lambda r: r.order)
     )
