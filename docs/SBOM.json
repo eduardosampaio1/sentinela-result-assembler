@@ -1,0 +1,23 @@
+{
+  "_nota": "SBOM minimo e verificado, nao gerado por ferramenta. So lista o que o pacote importa em RUNTIME — checado por AST sobre src/. Ferramentas de SBOM listariam o ambiente inteiro de build, e isso nao e o que este artefato carrega.",
+  "componente": {
+    "nome": "sentinela-result-assembler",
+    "versao": "0.1.0",
+    "commit": "e5038f64b3e1c34f75960f528f3edc34a88bc774",
+    "publicado_em_registry": false
+  },
+  "dependencias_runtime": [
+    {
+      "nome": "pydantic",
+      "versao_no_ambiente_de_build": "2.12.5",
+      "por_que": "modelos tipados dos contratos facts/result"
+    }
+  ],
+  "dependencias_de_teste_nao_embarcadas": [
+    "pytest",
+    "hypothesis",
+    "jsonschema",
+    "build"
+  ],
+  "_onde_ficam_os_artefatos": "dist/ e ignorado pelo git de proposito: artefato de build nao e fonte. O sha256 do wheel que o Orchestrator consome esta em vendor/result-assembler.lock.json, la — e o par (source_commit, sha256) e a identidade enquanto o pacote nao for publicado."
+}
