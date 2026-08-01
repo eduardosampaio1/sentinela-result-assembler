@@ -88,17 +88,58 @@ from result_assembler.version import (
 )
 
 
+def _campos_contratados() -> frozenset[str]:
+    """Nomes de campo que existem em algum modelo de `analysis-facts-v1`."""
+    modelos = (
+        AnalysisFacts,
+        FactsIdentity,
+        AnalysisWindow,
+        CalculationProvenance,
+        FactIndicator,
+        FactDimension,
+        FactRecommendation,
+        FactEvidenceSummary,
+        Denominator,
+    )
+    return frozenset(campo for m in modelos for campo in m.model_fields)
+
+
+_CAMPOS_CONTRATADOS = _campos_contratados()
+
+#: Substituto para segmento de caminho que veio do payload e não é campo contratado.
+_SEGMENTO_OCULTO = "<campo-nao-contratado>"
+
+
+def _local_seguro(loc: tuple[object, ...]) -> str:
+    """Caminho do erro sem ecoar texto controlado pelo payload.
+
+    O `loc` do pydantic inclui a **chave** do campo extra — e a chave é payload
+    (Codex R5 [1]). Um envelope com `{"Bearer sk-live-...": 1}` colocaria o token na
+    localização do erro, que é justamente o que vai para o log. Índices e nomes
+    contratados passam; o resto vira marcador.
+    """
+    partes: list[str] = []
+    for p in loc:
+        if isinstance(p, int):
+            partes.append(str(p))
+        elif isinstance(p, str) and p in _CAMPOS_CONTRATADOS:
+            partes.append(p)
+        else:
+            partes.append(_SEGMENTO_OCULTO)
+    return ".".join(partes)
+
+
 def parse_facts(payload: object) -> AnalysisFacts:
     """`dict` cru → `AnalysisFacts`, com erro da FAMÍLIA da biblioteca.
 
     Existe porque `model_validate` levanta `pydantic.ValidationError` (Codex R2 [5]):
     campo extra, `NaN`, bool ou string numérica escapariam de um `except AssemblyError`.
-    A mensagem do pydantic é resumida para não ecoar o payload no log.
+    Nem a mensagem nem a localização ecoam conteúdo do payload.
     """
     try:
         return AnalysisFacts.model_validate(payload)
     except ValidationError as exc:
-        locais = sorted({".".join(str(p) for p in e["loc"]) for e in exc.errors()})
+        locais = sorted({_local_seguro(tuple(e["loc"])) for e in exc.errors()})
         raise SchemaMismatch(
             f"payload não corresponde a {FACTS_SCHEMA_VERSION}",
             location="; ".join(locais[:5]),

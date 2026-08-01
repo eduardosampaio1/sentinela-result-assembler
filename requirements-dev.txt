@@ -5,3 +5,8 @@ hypothesis==6.122.3
 jsonschema==4.23.0
 ruff==0.8.4
 mypy==1.14.0
+# Usados por `python scripts/gates.py` (gates de build e auditoria de
+# dependencias). Sem eles, o entrypoint de gates falha num checkout limpo
+# por modulo ausente (Codex R5 [2]).
+build==1.2.2.post1
+pip-audit==2.9.0
