@@ -29,6 +29,24 @@ class FactsModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
+def _exigir_numero(v: Any) -> Any:
+    """Rejeita tudo que não seja `int`/`float` ANTES da coerção do pydantic.
+
+    Dois motivos, os dois encontrados por teste de propriedade e não por inspeção:
+
+    - `True` viraria `1.0`, e aí `isinstance(1.0, bool)` já é False — bool passaria como
+      medição válida;
+    - `"0"` viraria `0.0`, e aí um produtor que serializa números como texto publicaria
+      "zero medido" sem que ninguém tivesse medido zero.
+
+    Coerção é conveniência de entrada de usuário. Aqui a entrada é outra máquina: tipo
+    errado significa que o produtor está errado, e isso precisa aparecer.
+    """
+    if v is not None and (isinstance(v, bool) or not isinstance(v, int | float)):
+        raise ValueError(f"esperado número (int/float), recebido {type(v).__name__}")
+    return v
+
+
 class Availability(str, Enum):
     """Estado da medição — NUNCA derivado do valor.
 
@@ -79,6 +97,11 @@ class Denominator(FactsModel):
     kind: str = Field(min_length=1)  # ex.: "records", "intents", "sessions"
     value: float
 
+    @field_validator("value", mode="before")
+    @classmethod
+    def _so_numero(cls, v: Any) -> Any:
+        return _exigir_numero(v)
+
     @field_validator("value")
     @classmethod
     def _positivo_e_finito(cls, v: float) -> float:
@@ -113,12 +136,8 @@ class FactIndicator(FactsModel):
 
     @field_validator("value", "data_coverage", mode="before")
     @classmethod
-    def _bool_nao_e_numero(cls, v: Any) -> Any:
-        # `mode="before"` de propósito: o pydantic coage `True` para `1.0` antes do
-        # validador padrão, e aí `isinstance(1.0, bool)` é False — passaria batido.
-        if isinstance(v, bool):
-            raise ValueError("bool não é medição")
-        return v
+    def _so_numero(cls, v: Any) -> Any:
+        return _exigir_numero(v)
 
     @field_validator("value")
     @classmethod
@@ -153,10 +172,8 @@ class FactDimension(FactsModel):
 
     @field_validator("value", "data_coverage", mode="before")
     @classmethod
-    def _bool_nao_e_numero(cls, v: Any) -> Any:
-        if isinstance(v, bool):
-            raise ValueError("bool não é medição")
-        return v
+    def _so_numero(cls, v: Any) -> Any:
+        return _exigir_numero(v)
 
     @field_validator("value")
     @classmethod

@@ -10,6 +10,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+from massas import carregar_json, com_indicador, indice_de
 from result_assembler import (
     AnalysisFacts,
     AssemblyInvariantViolation,
@@ -23,8 +24,6 @@ from result_assembler import (
     UnsupportedMeasurementVersion,
     assemble,
 )
-
-from massas import carregar_json, com_indicador, indice_de
 
 
 @pytest.fixture

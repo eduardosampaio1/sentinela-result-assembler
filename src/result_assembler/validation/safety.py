@@ -31,10 +31,28 @@ _PADROES_PROIBIDOS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("url", re.compile(r"\b[a-z][a-z0-9+.-]*://", re.IGNORECASE)),
     ("credencial", re.compile(r"(?i)\b(bearer|token|secret|password|api[_-]?key|senha)\b")),
     ("chave privada", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY")),
-    ("stack trace", re.compile(r"(?i)(traceback \(most recent call last\)|\bat [\w.$]+\(.*\.(java|py|ts|js):\d+)")),
+    (
+        "stack trace",
+        re.compile(
+            r"(?i)(traceback \(most recent call last\)"
+            r"|\bat [\w.$]+\(.*\.(java|py|ts|js):\d+)"
+        ),
+    ),
     ("exceção", re.compile(r"(?i)\b\w*(Error|Exception)\b\s*:")),
-    ("sql/tabela", re.compile(r"(?i)\b(select\s+.*\s+from|insert\s+into|update\s+\w+\s+set|from\s+orchestrator_\w+)\b")),
-    ("identidade de execução", re.compile(r"(?i)\b(worker[_-]?id|engine[_-]?version|lease[_-]?token|attempt[_-]?id|job[_-]?id|instance[_-]?id)\b")),
+    (
+        "sql/tabela",
+        re.compile(
+            r"(?i)\b(select\s+.*\s+from|insert\s+into|update\s+\w+\s+set"
+            r"|from\s+orchestrator_\w+)\b"
+        ),
+    ),
+    (
+        "identidade de execução",
+        re.compile(
+            r"(?i)\b(worker[_-]?id|engine[_-]?version|lease[_-]?token"
+            r"|attempt[_-]?id|job[_-]?id|instance[_-]?id)\b"
+        ),
+    ),
     ("chave de objeto", re.compile(r"(?i)\b(s3|minio|bucket|object[_-]?key)\b")),
 )
 

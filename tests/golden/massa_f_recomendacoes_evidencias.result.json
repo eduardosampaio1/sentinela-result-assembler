@@ -1,0 +1,71 @@
+{
+  "analysis_id": "an-massa-f",
+  "dimensions": [],
+  "evidence": [
+    {
+      "id": "ev-1",
+      "kind": "uncovered_intent_group",
+      "label": "segunda via",
+      "observed_count": 3
+    },
+    {
+      "id": "ev-2",
+      "kind": "cost_outlier_group",
+      "label": "checkout",
+      "observed_count": 7
+    }
+  ],
+  "indicators": [
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 100.0
+      },
+      "display_precision": 4,
+      "id": "useful_outcome_rate",
+      "kind": "ratio",
+      "state": "measured",
+      "unit": "ratio",
+      "value": 0.8
+    }
+  ],
+  "measurement_contract_version": "measurement-1.0",
+  "partiality": {
+    "complete": true,
+    "reasons": []
+  },
+  "recommendations": [
+    {
+      "category": "coverage",
+      "evidence_refs": [
+        "ev-1"
+      ],
+      "id": "rec-a",
+      "priority": "P1",
+      "title": "Cobrir intencoes sem amostra"
+    },
+    {
+      "category": "economics",
+      "evidence_refs": [
+        "ev-2"
+      ],
+      "id": "rec-b",
+      "priority": "P2",
+      "title": "Reduzir custo por desfecho util"
+    },
+    {
+      "category": "operations",
+      "evidence_refs": [],
+      "id": "rec-c",
+      "priority": "P3",
+      "title": "Revisar limiar de escalonamento"
+    }
+  ],
+  "result_schema_version": "analysis-result-v1",
+  "summary": {
+    "analyzed_at": "2026-07-31T15:00:00Z",
+    "record_count": 100
+  }
+}

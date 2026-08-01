@@ -1,0 +1,154 @@
+{
+  "analysis_id": "an-massa-a",
+  "dimensions": [],
+  "evidence": [],
+  "indicators": [
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 100.0
+      },
+      "display_precision": 4,
+      "id": "useful_outcome_rate",
+      "kind": "ratio",
+      "state": "measured",
+      "unit": "ratio",
+      "value": 0.8
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 100.0
+      },
+      "display_precision": 4,
+      "id": "outcome_field_coverage_rate",
+      "kind": "ratio",
+      "state": "measured",
+      "unit": "ratio",
+      "value": 0.85
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": {
+        "kind": "intents",
+        "value": 20.0
+      },
+      "display_precision": 4,
+      "id": "intent_coverage_rate",
+      "kind": "ratio",
+      "state": "measured",
+      "unit": "ratio",
+      "value": 0.85
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": null,
+      "display_precision": 0,
+      "id": "analyzed_conversation_count",
+      "kind": "count",
+      "state": "measured",
+      "unit": "conversations",
+      "value": 100.0
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": null,
+      "display_precision": 0,
+      "id": "useful_outcome_count",
+      "kind": "count",
+      "state": "measured",
+      "unit": "conversations",
+      "value": 80.0
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": null,
+      "display_precision": 0,
+      "id": "handoff_count",
+      "kind": "count",
+      "state": "measured",
+      "unit": "conversations",
+      "value": 0.0
+    },
+    {
+      "coverage": null,
+      "currency": "USD",
+      "denominator": null,
+      "display_precision": 6,
+      "id": "total_estimated_cost",
+      "kind": "currency",
+      "state": "measured",
+      "unit": "currency",
+      "value": 10.0
+    },
+    {
+      "coverage": null,
+      "currency": "USD",
+      "denominator": null,
+      "display_precision": 6,
+      "id": "token_cost_total",
+      "kind": "currency",
+      "state": "measured",
+      "unit": "currency",
+      "value": 10.0
+    },
+    {
+      "coverage": null,
+      "currency": "USD",
+      "denominator": null,
+      "display_precision": 6,
+      "id": "handoff_cost_total",
+      "kind": "currency",
+      "state": "measured",
+      "unit": "currency",
+      "value": 0.0
+    },
+    {
+      "coverage": null,
+      "currency": "USD",
+      "denominator": {
+        "kind": "useful_outcomes",
+        "value": 80.0
+      },
+      "display_precision": 6,
+      "id": "cost_per_useful_outcome",
+      "kind": "currency",
+      "state": "measured",
+      "unit": "currency",
+      "value": 0.125
+    },
+    {
+      "coverage": null,
+      "currency": "USD",
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 100.0
+      },
+      "display_precision": 6,
+      "id": "cost_per_session",
+      "kind": "currency",
+      "state": "measured",
+      "unit": "currency",
+      "value": 0.1
+    }
+  ],
+  "measurement_contract_version": "measurement-1.0",
+  "partiality": {
+    "complete": true,
+    "reasons": []
+  },
+  "recommendations": [],
+  "result_schema_version": "analysis-result-v1",
+  "summary": {
+    "analyzed_at": "2026-07-31T10:00:00Z",
+    "record_count": 100
+  }
+}

@@ -11,6 +11,7 @@ import json
 
 import pytest
 
+from massas import carregar_json
 from result_assembler import (
     AnalysisFacts,
     assemble,
@@ -18,8 +19,6 @@ from result_assembler import (
     serialize_canonical,
     to_canonical_dict,
 )
-
-from massas import carregar_json
 
 TODAS = [
     "massa_a_principal.facts.json",
@@ -87,7 +86,7 @@ def test_serializacao_e_utf8_sem_escape(massa_f):
     bruto["recommendations"][0]["title"] = "Revisão de limiar com acentuação"
     o = assemble(AnalysisFacts.model_validate(bruto))
     bytes_ = serialize_canonical(o.public_result)
-    assert "acentuação".encode("utf-8") in bytes_
+    assert "acentuação".encode() in bytes_
     assert b"\\u00e7" not in bytes_
 
 

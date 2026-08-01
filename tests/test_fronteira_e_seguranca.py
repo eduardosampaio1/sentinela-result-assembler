@@ -9,9 +9,8 @@ from __future__ import annotations
 
 import pytest
 
-from result_assembler import AnalysisFacts, UnsafeEvidence, assemble, serialize_canonical
-
 from massas import carregar_json
+from result_assembler import AnalysisFacts, UnsafeEvidence, assemble, serialize_canonical
 
 
 @pytest.mark.security
@@ -170,9 +169,8 @@ def test_mensagem_de_erro_nao_ecoa_o_conteudo_proibido():
 
 @pytest.mark.security
 def test_erro_de_valor_nao_ecoa_o_valor_medido():
-    from result_assembler import InvalidValue
-
     from massas import com_indicador
+    from result_assembler import InvalidValue
 
     bruto = carregar_json("massa_a_principal.facts.json")
     with pytest.raises(InvalidValue) as exc:

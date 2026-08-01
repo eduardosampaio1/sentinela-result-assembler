@@ -10,9 +10,8 @@ import pytest
 # O pacote vive em `src/`; sem instalação editável, é isto que o torna importável.
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent / "src"))
 
-from massas import carregar, carregar_json  # noqa: E402
-
-from result_assembler import AnalysisFacts  # noqa: E402
+from massas import carregar, carregar_json
+from result_assembler import AnalysisFacts
 
 
 @pytest.fixture

@@ -122,7 +122,10 @@ class TestDataVemDoDominio:
                         for a in no.names
                         if a.name.split(".")[0] in proibidos
                     ]
-                elif isinstance(no, ast.ImportFrom) and no.module:
-                    if no.module.split(".")[0] in proibidos:
-                        achados.append(f"{py.name}: from {no.module}")
+                elif (
+                    isinstance(no, ast.ImportFrom)
+                    and no.module
+                    and no.module.split(".")[0] in proibidos
+                ):
+                    achados.append(f"{py.name}: from {no.module}")
         assert achados == [], f"núcleo puro importou fonte de não-determinismo: {achados}"

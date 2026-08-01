@@ -1,0 +1,81 @@
+{
+  "analysis_id": "an-massa-b",
+  "dimensions": [],
+  "evidence": [],
+  "indicators": [
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 10.0
+      },
+      "display_precision": 4,
+      "id": "useful_outcome_rate",
+      "kind": "ratio",
+      "state": "measured",
+      "unit": "ratio",
+      "value": 0.0
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 10.0
+      },
+      "display_precision": 4,
+      "id": "outcome_field_coverage_rate",
+      "kind": "ratio",
+      "state": "measured",
+      "unit": "ratio",
+      "value": 0.0
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": null,
+      "display_precision": 0,
+      "id": "useful_outcome_count",
+      "kind": "count",
+      "state": "measured",
+      "unit": "conversations",
+      "value": 0.0
+    },
+    {
+      "coverage": null,
+      "currency": "USD",
+      "denominator": null,
+      "display_precision": 6,
+      "id": "total_estimated_cost",
+      "kind": "currency",
+      "state": "measured",
+      "unit": "currency",
+      "value": 0.5
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": null,
+      "display_precision": 6,
+      "id": "cost_per_useful_outcome",
+      "kind": "currency",
+      "state": "not_measured",
+      "unit": "currency",
+      "value": null
+    }
+  ],
+  "measurement_contract_version": "measurement-1.0",
+  "partiality": {
+    "complete": false,
+    "reasons": [
+      "indicator_not_measured"
+    ]
+  },
+  "recommendations": [],
+  "result_schema_version": "analysis-result-v1",
+  "summary": {
+    "analyzed_at": "2026-07-31T11:00:00Z",
+    "record_count": 10
+  }
+}

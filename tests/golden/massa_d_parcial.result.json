@@ -1,0 +1,97 @@
+{
+  "analysis_id": "an-massa-d",
+  "dimensions": [
+    {
+      "coverage": null,
+      "id": "economic",
+      "state": "measured",
+      "value": 0.72
+    },
+    {
+      "coverage": 0.6,
+      "id": "semantic",
+      "state": "partially_measured",
+      "value": 0.5
+    }
+  ],
+  "evidence": [],
+  "indicators": [
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 50.0
+      },
+      "display_precision": 4,
+      "id": "useful_outcome_rate",
+      "kind": "ratio",
+      "state": "measured",
+      "unit": "ratio",
+      "value": 0.6
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": null,
+      "display_precision": 4,
+      "id": "conversion_rate",
+      "kind": "ratio",
+      "state": "not_applicable",
+      "unit": "ratio",
+      "value": null
+    },
+    {
+      "coverage": 0.5,
+      "currency": null,
+      "denominator": {
+        "kind": "intents",
+        "value": 25.0
+      },
+      "display_precision": 4,
+      "id": "intent_coverage_rate",
+      "kind": "ratio",
+      "state": "partially_measured",
+      "unit": "ratio",
+      "value": 0.4
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": null,
+      "display_precision": 6,
+      "id": "cost_per_useful_outcome",
+      "kind": "currency",
+      "state": "not_measured",
+      "unit": "currency",
+      "value": null
+    },
+    {
+      "coverage": null,
+      "currency": null,
+      "denominator": null,
+      "display_precision": 4,
+      "id": "mean_response_variance_per_intent",
+      "kind": "scalar",
+      "state": "calculation_failed",
+      "unit": null,
+      "value": null
+    }
+  ],
+  "measurement_contract_version": "measurement-1.0",
+  "partiality": {
+    "complete": false,
+    "reasons": [
+      "indicator_calculation_failed",
+      "indicator_not_applicable",
+      "indicator_not_measured",
+      "indicator_partially_measured"
+    ]
+  },
+  "recommendations": [],
+  "result_schema_version": "analysis-result-v1",
+  "summary": {
+    "analyzed_at": "2026-07-31T13:00:00Z",
+    "record_count": 50
+  }
+}

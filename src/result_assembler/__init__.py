@@ -143,7 +143,7 @@ __all__ = [
     "checksum",
     "serialize_canonical",
     "to_canonical_dict",
-    "validate_facts",
     "validate_evidence_safety",
+    "validate_facts",
     "validate_result",
 ]
