@@ -126,13 +126,12 @@ def _validar_unidades_observadas(ind: FactIndicator, onde: str) -> None:
         raise AssemblyInvariantViolation(
             "observed_units não pode exceder expected_units", location=onde
         )
-    if ind.data_coverage is not None:
-        # Tolerância porque a cobertura costuma vir arredondada pelo produtor.
-        if abs((obs / esp) - ind.data_coverage) > 0.01:
-            raise AssemblyInvariantViolation(
-                "data_coverage não corresponde a observed_units/expected_units",
-                location=f"{onde}.data_coverage",
-            )
+    # Tolerância de 0.01 porque a cobertura costuma vir arredondada pelo produtor.
+    if ind.data_coverage is not None and abs((obs / esp) - ind.data_coverage) > 0.01:
+        raise AssemblyInvariantViolation(
+            "data_coverage não corresponde a observed_units/expected_units",
+            location=f"{onde}.data_coverage",
+        )
 
 
 def _validar_contra_definicao(
