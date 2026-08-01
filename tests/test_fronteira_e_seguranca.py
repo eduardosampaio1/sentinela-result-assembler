@@ -74,10 +74,7 @@ def test_nenhum_modelo_publico_declara_campo_interno():
         PublicSummary,
     )
     achados = [
-        f"{m.__name__}.{campo}"
-        for m in modelos
-        for campo in m.model_fields
-        if campo in proibidos
+        f"{m.__name__}.{campo}" for m in modelos for campo in m.model_fields if campo in proibidos
     ]
     assert achados == [], f"contrato público declara campo interno: {achados}"
 

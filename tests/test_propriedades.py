@@ -45,9 +45,7 @@ def test_qualquer_ordem_de_chegada_produz_os_mesmos_bytes(permutacao):
 
     embaralhado = copy.deepcopy(base)
     embaralhado["indicators"] = [base["indicators"][i] for i in permutacao]
-    obtido = serialize_canonical(
-        assemble(AnalysisFacts.model_validate(embaralhado)).public_result
-    )
+    obtido = serialize_canonical(assemble(AnalysisFacts.model_validate(embaralhado)).public_result)
     assert obtido == referencia
 
 
@@ -63,9 +61,7 @@ def test_duplicar_qualquer_indicador_recusa(indice):
 @RAPIDO
 @given(
     valor=st.one_of(
-        st.floats(allow_nan=True, allow_infinity=True).filter(
-            lambda v: not math.isfinite(v)
-        ),
+        st.floats(allow_nan=True, allow_infinity=True).filter(lambda v: not math.isfinite(v)),
         st.booleans(),
         st.text(min_size=1, max_size=8),
         st.lists(st.integers(), min_size=1, max_size=2),
@@ -122,7 +118,5 @@ def test_ordem_de_recomendacao_precisa_ser_unica_e_manda_na_publicacao(ordens):
         return
 
     r = assemble(AnalysisFacts.model_validate(base)).public_result
-    esperado = [
-        rec["id"] for rec in sorted(base["recommendations"], key=lambda x: x["order"])
-    ]
+    esperado = [rec["id"] for rec in sorted(base["recommendations"], key=lambda x: x["order"])]
     assert [x.id for x in r.recommendations] == esperado

@@ -66,9 +66,7 @@ class TestDimensoesPassamPelaMesmaRegua:
         `not_measured` com valor presente."""
         with pytest.raises(AssemblyInvariantViolation):
             montar(
-                com_dimensao(
-                    bruto, availability="unavailable", reason="no_input_data", value=0.72
-                )
+                com_dimensao(bruto, availability="unavailable", reason="no_input_data", value=0.72)
             )
 
     def test_versao_de_calculo_desconhecida_recusa(self, bruto):

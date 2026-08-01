@@ -138,9 +138,7 @@ def _ordem_canonica(facts: AnalysisFacts) -> tuple[FactIndicator, ...]:
 
 
 def _partialidade(indicadores: tuple[PublicIndicator, ...]) -> Partiality:
-    motivos = {
-        _MOTIVO_POR_ESTADO[i.state] for i in indicadores if i.state in _MOTIVO_POR_ESTADO
-    }
+    motivos = {_MOTIVO_POR_ESTADO[i.state] for i in indicadores if i.state in _MOTIVO_POR_ESTADO}
     return Partiality(complete=not motivos, reasons=tuple(sorted(motivos)))
 
 
@@ -155,9 +153,7 @@ def assemble(facts: AnalysisFacts) -> AssemblyOutcome:
     validate_evidence_safety(facts)
 
     indicadores = tuple(_publicar_indicador(ind) for ind in _ordem_canonica(facts))
-    dimensoes = tuple(
-        _publicar_dimensao(d) for d in sorted(facts.dimensions, key=lambda d: d.id)
-    )
+    dimensoes = tuple(_publicar_dimensao(d) for d in sorted(facts.dimensions, key=lambda d: d.id))
     # A ordem é a do DOMÍNIO (`order`), que já rankeou. O assembler não reordena por
     # impacto, não escolhe a principal e não gera headline.
     recomendacoes = tuple(
@@ -175,9 +171,7 @@ def assemble(facts: AnalysisFacts) -> AssemblyOutcome:
         for r in sorted(facts.recommendations, key=lambda r: r.order)
     )
     evidencias = tuple(
-        PublicEvidenceSummary(
-            id=e.id, kind=e.kind, observed_count=e.observed_count, label=e.label
-        )
+        PublicEvidenceSummary(id=e.id, kind=e.kind, observed_count=e.observed_count, label=e.label)
         for e in sorted(facts.evidence, key=lambda e: e.id)
     )
 

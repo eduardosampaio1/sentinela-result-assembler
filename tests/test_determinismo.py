@@ -71,9 +71,7 @@ def test_checksum_muda_quando_o_conteudo_muda(massa_a):
 @pytest.mark.determinism
 def test_checksum_do_manifesto_confere_com_os_bytes_publicados(massa_a):
     o = assemble(massa_a)
-    assert o.internal_manifest.result_checksum == checksum(
-        serialize_canonical(o.public_result)
-    )
+    assert o.internal_manifest.result_checksum == checksum(serialize_canonical(o.public_result))
     assert o.internal_manifest.checksum_algorithm == "sha256"
 
 

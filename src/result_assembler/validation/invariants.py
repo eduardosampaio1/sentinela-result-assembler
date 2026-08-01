@@ -129,9 +129,7 @@ def _validar_unidades_observadas(ind: FactIndicator, onde: str) -> None:
         )
 
 
-def _validar_contra_definicao(
-    ind: FactIndicator, defin: IndicatorDefinition, onde: str
-) -> None:
+def _validar_contra_definicao(ind: FactIndicator, defin: IndicatorDefinition, onde: str) -> None:
     if ind.kind is not defin.kind:
         raise InvalidValue(
             f"kind incompatível: contrato exige {defin.kind.value}", location=f"{onde}.kind"
@@ -156,9 +154,7 @@ def _validar_contra_definicao(
     # objetivo: o contrato existe para o produtor DIZER o que mediu.
     if defin.unit is None:
         if ind.unit is not None:
-            raise InvalidUnit(
-                "indicador não contrata unidade", location=f"{onde}.unit"
-            )
+            raise InvalidUnit("indicador não contrata unidade", location=f"{onde}.unit")
     elif ind.unit is None:
         raise InvalidUnit(
             f"unidade obrigatória para este indicador ('{defin.unit}')",
@@ -211,9 +207,7 @@ def _validar_contra_definicao(
                     location=f"{onde}.currency",
                 )
     elif ind.currency:
-        raise InvalidUnit(
-            "código de moeda declarado sem valor medido", location=f"{onde}.currency"
-        )
+        raise InvalidUnit("código de moeda declarado sem valor medido", location=f"{onde}.currency")
 
 
 def _validar_indicadores(facts: AnalysisFacts) -> None:

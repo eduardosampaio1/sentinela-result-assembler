@@ -39,9 +39,9 @@ class TestSincronizacaoDeSchemas:
         """Se alguém mudar o modelo e esquecer `python scripts/generate_schemas.py`,
         é AQUI que descobre — não em produção."""
         em_disco = (RAIZ / "schemas" / nome).read_text(encoding="utf-8")
-        assert em_disco == serializar(gerar(modelo, schema_id)), (
-            f"schemas/{nome} está defasado — rode `python scripts/generate_schemas.py`"
-        )
+        assert em_disco == serializar(
+            gerar(modelo, schema_id)
+        ), f"schemas/{nome} está defasado — rode `python scripts/generate_schemas.py`"
 
     @pytest.mark.parametrize("nome", MASSAS)
     def test_toda_massa_valida_contra_o_schema_de_entrada(self, nome):
@@ -71,9 +71,9 @@ class TestSincronizacaoDeSchemas:
         assert schema.get("additionalProperties") is False
         for nome, definicao in schema.get("$defs", {}).items():
             if definicao.get("type") == "object":
-                assert definicao.get("additionalProperties") is False, (
-                    f"$defs.{nome} aceitaria campo não contratado"
-                )
+                assert (
+                    definicao.get("additionalProperties") is False
+                ), f"$defs.{nome} aceitaria campo não contratado"
 
 
 class TestRegistro:
@@ -122,14 +122,15 @@ class TestRegistro:
             "token_waste_per_session",
             "estimated_wasted_tokens_total",
         }
-        assert fora & set(INDICATOR_REGISTRY) == set(), (
-            "métrica de semântica não resolvida entrou no registro"
-        )
+        assert (
+            fora & set(INDICATOR_REGISTRY) == set()
+        ), "métrica de semântica não resolvida entrou no registro"
 
     def test_dimensoes_suportadas_sao_as_quatro_do_composto(self):
-        assert frozenset(
-            {"semantic", "behavioral", "structural", "economic"}
-        ) == SUPPORTED_DIMENSION_IDS
+        assert (
+            frozenset({"semantic", "behavioral", "structural", "economic"})
+            == SUPPORTED_DIMENSION_IDS
+        )
 
 
 class TestErros:

@@ -53,11 +53,11 @@ class Availability(str, Enum):
     Espelha `core/contracts/measurement.py::Availability` do domínio.
     """
 
-    AVAILABLE = "available"          # medido; valor confiável (ZERO REAL entra aqui)
-    PARTIAL = "partial"              # medido sobre subconjunto DECLARADO
-    UNAVAILABLE = "unavailable"      # dado de entrada ausente ou insuficiente
+    AVAILABLE = "available"  # medido; valor confiável (ZERO REAL entra aqui)
+    PARTIAL = "partial"  # medido sobre subconjunto DECLARADO
+    UNAVAILABLE = "unavailable"  # dado de entrada ausente ou insuficiente
     NOT_EVALUABLE = "not_evaluable"  # os dados existem, a métrica não se aplica
-    FAILED = "failed"                # houve tentativa e erro explícito
+    FAILED = "failed"  # houve tentativa e erro explícito
 
 
 class Reason(str, Enum):
@@ -80,10 +80,10 @@ class IndicatorKind(str, Enum):
     si NÃO acontece aqui nem no assembler: pertence ao frontend.
     """
 
-    RATIO = "ratio"        # fração 0..1 declarada pela origem
-    COUNT = "count"        # contagem absoluta — nunca percentual
+    RATIO = "ratio"  # fração 0..1 declarada pela origem
+    COUNT = "count"  # contagem absoluta — nunca percentual
     CURRENCY = "currency"  # valor monetário
-    SCALAR = "scalar"      # número sem unidade semântica (ex.: variância)
+    SCALAR = "scalar"  # número sem unidade semântica (ex.: variância)
 
 
 class Denominator(FactsModel):

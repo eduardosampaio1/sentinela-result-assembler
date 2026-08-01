@@ -98,9 +98,7 @@ def parse_facts(payload: object) -> AnalysisFacts:
     try:
         return AnalysisFacts.model_validate(payload)
     except ValidationError as exc:
-        locais = sorted(
-            {".".join(str(p) for p in e["loc"]) for e in exc.errors()}
-        )
+        locais = sorted({".".join(str(p) for p in e["loc"]) for e in exc.errors()})
         raise SchemaMismatch(
             f"payload não corresponde a {FACTS_SCHEMA_VERSION}",
             location="; ".join(locais[:5]),

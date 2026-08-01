@@ -34,8 +34,7 @@ _PADROES_PROIBIDOS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "stack trace",
         re.compile(
-            r"(?i)(traceback \(most recent call last\)"
-            r"|\bat [\w.$]+\(.*\.(java|py|ts|js):\d+)"
+            r"(?i)(traceback \(most recent call last\)" r"|\bat [\w.$]+\(.*\.(java|py|ts|js):\d+)"
         ),
     ),
     ("exceção", re.compile(r"(?i)\b\w*(Error|Exception)\b\s*:")),

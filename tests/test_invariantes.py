@@ -161,9 +161,7 @@ class TestCoerenciaDisponibilidade:
         """O defeito com nome: `unavailable` carregando 0.0. Um consumidor leria zero."""
         with pytest.raises(AssemblyInvariantViolation) as exc:
             montar(
-                com_indicador(
-                    bruto, availability="unavailable", reason="no_input_data", value=0.0
-                )
+                com_indicador(bruto, availability="unavailable", reason="no_input_data", value=0.0)
             )
         assert "ausência" in str(exc.value).lower()
 
