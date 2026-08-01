@@ -261,6 +261,10 @@ SUPPORTED_DIMENSION_IDS: frozenset[str] = frozenset(
     {"semantic", "behavioral", "structural", "economic"}
 )
 
+#: Versões de cálculo aceitas para dimensões. Mesma exigência dos indicadores: sem
+#: declaração de versão não há como recusar um composto produzido por fórmula antiga.
+SUPPORTED_DIMENSION_CALCULATION_VERSIONS: frozenset[str] = _V1
+
 
 def definicao_de(internal_id: str) -> IndicatorDefinition | None:
     """Definição pública do fato, ou `None` se ele não é um indicador contratado."""

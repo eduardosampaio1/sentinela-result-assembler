@@ -34,7 +34,6 @@ from result_assembler.errors import UnknownIndicator
 from result_assembler.registry.indicators import (
     CANONICAL_ORDER,
     INDICATOR_REGISTRY_VERSION,
-    SUPPORTED_DIMENSION_IDS,
     definicao_de,
 )
 from result_assembler.serialization.canonical import (
@@ -154,12 +153,6 @@ def assemble(facts: AnalysisFacts) -> AssemblyOutcome:
     """
     validate_facts(facts)
     validate_evidence_safety(facts)
-
-    for i, dim in enumerate(facts.dimensions):
-        if dim.id not in SUPPORTED_DIMENSION_IDS:
-            raise UnknownIndicator(
-                f"dimensão não registrada: {dim.id}", location=f"dimensions[{i}]"
-            )
 
     indicadores = tuple(_publicar_indicador(ind) for ind in _ordem_canonica(facts))
     dimensoes = tuple(

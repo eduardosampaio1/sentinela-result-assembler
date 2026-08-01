@@ -17,6 +17,7 @@ from result_assembler.contracts.facts import (
     Availability,
     FactIndicator,
     IndicatorKind,
+    Reason,
 )
 from result_assembler.errors import (
     AssemblyInvariantViolation,
@@ -29,7 +30,12 @@ from result_assembler.errors import (
     UnsupportedFactsVersion,
     UnsupportedMeasurementVersion,
 )
-from result_assembler.registry.indicators import IndicatorDefinition, definicao_de
+from result_assembler.registry.indicators import (
+    SUPPORTED_DIMENSION_CALCULATION_VERSIONS,
+    SUPPORTED_DIMENSION_IDS,
+    IndicatorDefinition,
+    definicao_de,
+)
 from result_assembler.version import (
     SUPPORTED_FACTS_SCHEMA_VERSIONS,
     SUPPORTED_MEASUREMENT_CONTRACT_VERSIONS,
@@ -86,10 +92,45 @@ def _validar_coerencia_disponibilidade(ind: FactIndicator, onde: str) -> None:
                 "partial exige data_coverage estritamente entre 0 e 1",
                 location=f"{onde}.data_coverage",
             )
-    elif ind.availability is Availability.AVAILABLE and ind.data_coverage is not None:
-        if ind.data_coverage != 1.0:
+    elif (
+        ind.availability is Availability.AVAILABLE
+        and ind.data_coverage is not None
+        and ind.data_coverage != 1.0
+    ):
+        raise AssemblyInvariantViolation(
+            "available com cobertura declarada exige data_coverage=1.0",
+            location=f"{onde}.data_coverage",
+        )
+    _validar_unidades_observadas(ind, onde)
+
+
+def _validar_unidades_observadas(ind: FactIndicator, onde: str) -> None:
+    """`observed_units`/`expected_units` precisam ser coerentes entre si e com a cobertura.
+
+    Sem esta checagem (Codex R1 [3]), um produtor poderia declarar `data_coverage=0.5`
+    com `observed=25` e `expected=1000` e ninguém notaria — a cobertura publicada estaria
+    contando uma história que os próprios contadores desmentem.
+    """
+    obs, esp = ind.observed_units, ind.expected_units
+    if obs is not None and obs < 0:
+        raise AssemblyInvariantViolation(
+            "observed_units não pode ser negativo", location=f"{onde}.observed_units"
+        )
+    if esp is not None and esp <= 0:
+        raise AssemblyInvariantViolation(
+            "expected_units precisa ser positivo", location=f"{onde}.expected_units"
+        )
+    if obs is None or esp is None:
+        return
+    if obs > esp:
+        raise AssemblyInvariantViolation(
+            "observed_units não pode exceder expected_units", location=onde
+        )
+    if ind.data_coverage is not None:
+        # Tolerância porque a cobertura costuma vir arredondada pelo produtor.
+        if abs((obs / esp) - ind.data_coverage) > 0.01:
             raise AssemblyInvariantViolation(
-                "available com cobertura declarada exige data_coverage=1.0",
+                "data_coverage não corresponde a observed_units/expected_units",
                 location=f"{onde}.data_coverage",
             )
 
@@ -115,7 +156,21 @@ def _validar_contra_definicao(
         raise AssemblyInvariantViolation(
             "availability não permitida para este indicador", location=f"{onde}.availability"
         )
-    if defin.unit is not None and ind.unit is not None and ind.unit != defin.unit:
+    # A unidade é OBRIGATÓRIA quando o registro contrata uma, e proibida quando não.
+    # Aceitar `unit` ausente (Codex R1 [2]) deixaria o produtor omitir a declaração e o
+    # fato passaria "como se" a unidade tivesse sido confirmada — que é o oposto do
+    # objetivo: o contrato existe para o produtor DIZER o que mediu.
+    if defin.unit is None:
+        if ind.unit is not None:
+            raise InvalidUnit(
+                "indicador não contrata unidade", location=f"{onde}.unit"
+            )
+    elif ind.unit is None:
+        raise InvalidUnit(
+            f"unidade obrigatória para este indicador ('{defin.unit}')",
+            location=f"{onde}.unit",
+        )
+    elif ind.unit != defin.unit:
         raise InvalidUnit("unidade diverge da contratada", location=f"{onde}.unit")
 
     # Denominador: exigido só quando o indicador tem valor. Sem valor não há razão a
@@ -185,6 +240,64 @@ def _validar_indicadores(facts: AnalysisFacts) -> None:
         _validar_contra_definicao(ind, defin, onde)
 
 
+def _validar_dimensoes(facts: AnalysisFacts) -> None:
+    """Dimensões passam pela MESMA régua dos indicadores.
+
+    Codex R1 [1]: elas não passavam por régua nenhuma. Uma dimensão `unavailable`
+    carregando `value=0.72` atravessava e era publicada com `state="not_measured"` e valor
+    presente — o defeito "ausência com valor" que os indicadores já bloqueavam, entrando
+    pela porta ao lado. `calculation_version` também não era verificada.
+    """
+    vistas: set[str] = set()
+    for i, dim in enumerate(facts.dimensions):
+        onde = f"dimensions[{i}]"
+        if dim.id not in SUPPORTED_DIMENSION_IDS:
+            raise UnknownIndicator(f"dimensão não registrada: {dim.id}", location=onde)
+        if dim.id in vistas:
+            raise DuplicateIndicator(f"dimensão repetida: {dim.id}", location=onde)
+        vistas.add(dim.id)
+
+        if dim.calculation_version not in SUPPORTED_DIMENSION_CALCULATION_VERSIONS:
+            raise UnsupportedMeasurementVersion(
+                "calculation_version fora das versões aceitas para dimensões",
+                location=f"{onde}.calculation_version",
+            )
+
+        tem_valor = dim.value is not None
+        if dim.availability in _COM_VALOR and not tem_valor:
+            raise AssemblyInvariantViolation(
+                f"availability={dim.availability.value} exige valor presente", location=onde
+            )
+        if dim.availability not in _COM_VALOR:
+            if tem_valor:
+                raise AssemblyInvariantViolation(
+                    f"availability={dim.availability.value} exige valor ausente; "
+                    "ausência NÃO pode ser representada por zero",
+                    location=f"{onde}.value",
+                )
+            if dim.reason is Reason.OK:
+                raise AssemblyInvariantViolation(
+                    "indisponibilidade exige motivo diferente de 'ok'",
+                    location=f"{onde}.reason",
+                )
+        if dim.availability is Availability.PARTIAL:
+            if dim.data_coverage is None or not (0.0 < dim.data_coverage < 1.0):
+                raise AssemblyInvariantViolation(
+                    "partial exige data_coverage estritamente entre 0 e 1",
+                    location=f"{onde}.data_coverage",
+                )
+        elif dim.data_coverage is not None and dim.data_coverage != 1.0:
+            raise AssemblyInvariantViolation(
+                "cobertura declarada fora de partial exige data_coverage=1.0",
+                location=f"{onde}.data_coverage",
+            )
+        # Dimensão é composto normalizado 0..1 no domínio (`aggregate_health`).
+        if tem_valor and not (0.0 <= float(dim.value or 0.0) <= 1.0):
+            raise InvalidValue(
+                "dimensão precisa estar em [0, 1]", location=f"{onde}.value"
+            )
+
+
 def _validar_recomendacoes(facts: AnalysisFacts) -> None:
     ids: set[str] = set()
     ordens: set[int] = set()
@@ -225,5 +338,6 @@ def validate_facts(facts: AnalysisFacts) -> None:
     _validar_versoes(facts)
     _validar_identidade(facts)
     _validar_indicadores(facts)
+    _validar_dimensoes(facts)
     _validar_recomendacoes(facts)
     _validar_evidencias(facts)
