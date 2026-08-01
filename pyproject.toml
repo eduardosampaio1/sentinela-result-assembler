@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "sentinela-result-assembler"
 version = "0.1.0"
@@ -6,6 +10,17 @@ requires-python = ">=3.10"
 
 # Dependências ficam em requirements*.txt, seguindo o padrão dos repos `sentinela`
 # e `sentinela-orchestrator`. Este arquivo configura ferramentas, não gerencia pacotes.
+
+# O marcador PEP 561 precisa ir DENTRO do wheel. Sem ele o pacote é instalável mas
+# "não-tipado" para quem o consome: o Orchestrator importaria `parse_facts`/`assemble`
+# como `Any` e perderia a checagem exatamente na fronteira facts→resultado.
+#
+# Medido: com o `include-package-data` que o setuptools já aplica por padrão, o marcador
+# viaja mesmo SEM esta declaração — ela não é o que faz funcionar hoje. Fica como intenção
+# explícita, para que desligar aquele default não destipe o pacote em silêncio. Quem
+# garante de fato é `tests/test_distribuicao_tipada.py`, que abre o artefato construído.
+[tool.setuptools.package-data]
+result_assembler = ["py.typed"]
 
 [tool.ruff]
 line-length = 100
