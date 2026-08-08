@@ -24,6 +24,13 @@ FACTS_SCHEMA_VERSION = "analysis-facts-v1"
 #: Contrato de SAÍDA (público, consumido por Result Store → Gateway → frontend).
 RESULT_SCHEMA_VERSION = "analysis-result-v1"
 
+#: Contrato de saída do documento INTEGRADO (MF6.2): Engine facts + projeção pública.
+#:
+#: v2 e não um bloco aditivo no v1 porque `additionalProperties: false` torna QUALQUER acréscimo
+#: uma quebra para quem valida contra o schema publicado — inclusive um campo opcional. A escolha
+#: nunca foi "quebra × não quebra": era **quem** quebra. O v1 permanece exatamente como está.
+RESULT_SCHEMA_V2_VERSION = "analysis-result-v2"
+
 #: Versões do contrato de MEDIÇÃO que este assembler sabe interpretar. Fail-closed:
 #: uma versão fora desta lista é recusada, nunca montada "no melhor esforço".
 SUPPORTED_MEASUREMENT_CONTRACT_VERSIONS: frozenset[str] = frozenset({"measurement-1.0"})

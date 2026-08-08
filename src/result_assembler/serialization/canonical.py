@@ -24,19 +24,20 @@ import json
 from typing import Any
 
 from result_assembler.contracts.result import PublicResult
+from result_assembler.contracts.result_v2 import PublicResultV2
 
 #: Nome do algoritmo publicado no manifesto, para o verificador não adivinhar.
 CHECKSUM_ALGORITHM = "sha256"
 
 
-def to_canonical_dict(result: PublicResult) -> dict[str, Any]:
+def to_canonical_dict(result: PublicResult | PublicResultV2) -> dict[str, Any]:
     """`PublicResult` → dict JSON-compatível, sem objetos do pydantic nem enums."""
     # `mode="json"` converte enums em seus valores e tuplas em listas — o que sai já é
     # exatamente o que o JSON vai conter.
     return result.model_dump(mode="json")
 
 
-def serialize_canonical(result: PublicResult) -> bytes:
+def serialize_canonical(result: PublicResult | PublicResultV2) -> bytes:
     """Serializa o resultado público em bytes canônicos e estáveis."""
     return json.dumps(
         to_canonical_dict(result),

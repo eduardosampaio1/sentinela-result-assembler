@@ -1,0 +1,424 @@
+{
+  "$defs": {
+    "ComponentStatus": {
+      "description": "O que a projeção CONCLUIU. Vocabulário do Analytics, não do Assembler.\n\n`str, Enum` e não `StrEnum` pela mesma razão do resto da plataforma: o piso é Python 3.10.",
+      "enum": [
+        "ready",
+        "partial",
+        "withheld"
+      ],
+      "title": "ComponentStatus",
+      "type": "string"
+    },
+    "IndicatorState": {
+      "description": "O que o consumidor precisa saber ANTES de olhar o valor.\n\nMapeado 1-para-1 a partir da disponibilidade dos fatos; nunca inferido do valor.",
+      "enum": [
+        "measured",
+        "partially_measured",
+        "not_measured",
+        "not_applicable",
+        "calculation_failed"
+      ],
+      "title": "IndicatorState",
+      "type": "string"
+    },
+    "Partiality": {
+      "additionalProperties": false,
+      "description": "Declara explicitamente se o resultado é completo — em vez de deixar o consumidor\ninferir pela ausência.\n\nNão existe lista de \"indicadores excluídos\" porque a montagem é **fail-closed**: um\nindicador desconhecido ou uma versão incompatível recusam a montagem inteira, não são\nomitidos em silêncio. Logo, todo indicador que os fatos trouxeram está aqui — o que\nvaria é o ESTADO de cada um, e é isso que `reasons` resume.",
+      "properties": {
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "complete",
+        "reasons"
+      ],
+      "title": "Partiality",
+      "type": "object"
+    },
+    "PublicAnalyticsBlock": {
+      "additionalProperties": false,
+      "description": "O bloco analítico. **Wrapper obrigatório, conteúdo anulável.**\n\nObrigatório porque a ausência do bloco e a decisão de não liberar nada são coisas diferentes,\ne um documento que as confundisse deixaria o consumidor adivinhar. Anulável porque `withheld`\né conclusão válida.",
+      "properties": {
+        "component_status": {
+          "$ref": "#/$defs/ComponentStatus"
+        },
+        "data": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data"
+        },
+        "projection_digest": {
+          "minLength": 1,
+          "title": "Projection Digest",
+          "type": "string"
+        },
+        "record_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Record Count"
+        },
+        "snapshot_contract_version": {
+          "minLength": 1,
+          "title": "Snapshot Contract Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "component_status",
+        "projection_digest",
+        "snapshot_contract_version"
+      ],
+      "title": "PublicAnalyticsBlock",
+      "type": "object"
+    },
+    "PublicDenominator": {
+      "additionalProperties": false,
+      "description": "Sobre o que a razão foi calculada — publicado para permitir auditoria.",
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ],
+      "title": "PublicDenominator",
+      "type": "object"
+    },
+    "PublicDimension": {
+      "additionalProperties": false,
+      "description": "Uma dimensão analítica no resultado público.",
+      "properties": {
+        "coverage": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Coverage"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/$defs/IndicatorState"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "id",
+        "state",
+        "value",
+        "coverage"
+      ],
+      "title": "PublicDimension",
+      "type": "object"
+    },
+    "PublicEvidenceSummary": {
+      "additionalProperties": false,
+      "description": "Resumo agregado de evidência — só campos da allowlist.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Label"
+        },
+        "observed_count": {
+          "title": "Observed Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "observed_count",
+        "label"
+      ],
+      "title": "PublicEvidenceSummary",
+      "type": "object"
+    },
+    "PublicIndicator": {
+      "additionalProperties": false,
+      "description": "Um indicador no resultado público.",
+      "properties": {
+        "coverage": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Coverage"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Currency"
+        },
+        "denominator": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicDenominator"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "display_precision": {
+          "title": "Display Precision",
+          "type": "integer"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/$defs/IndicatorState"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "id",
+        "state",
+        "value",
+        "kind",
+        "unit",
+        "currency",
+        "denominator",
+        "coverage",
+        "display_precision"
+      ],
+      "title": "PublicIndicator",
+      "type": "object"
+    },
+    "PublicRecommendation": {
+      "additionalProperties": false,
+      "description": "Recomendação transportada na ordem e prioridade do domínio.",
+      "properties": {
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Category"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "priority": {
+          "title": "Priority",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "priority",
+        "category",
+        "evidence_refs"
+      ],
+      "title": "PublicRecommendation",
+      "type": "object"
+    },
+    "PublicSummaryV2": {
+      "additionalProperties": false,
+      "description": "Cabeçalho do documento integrado. **Nenhum campo chamado `record_count`.**\n\nA ausência é deliberada e é o ponto da MF6.3: com duas contagens no mesmo documento, um nome\nambíguo faria a errada ser lida. Quem quer a janela da Engine pede\n`engine_window_record_count`; quem quer o denominador analítico pede `analytics.record_count`.",
+      "properties": {
+        "analyzed_at": {
+          "title": "Analyzed At",
+          "type": "string"
+        },
+        "engine_window_record_count": {
+          "minimum": 0,
+          "title": "Engine Window Record Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "engine_window_record_count",
+        "analyzed_at"
+      ],
+      "title": "PublicSummaryV2",
+      "type": "object"
+    }
+  },
+  "$id": "analysis-result-v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "O documento integrado. Mesma espinha do v1, mais o bloco analítico e o nome novo.",
+  "properties": {
+    "analysis_id": {
+      "title": "Analysis Id",
+      "type": "string"
+    },
+    "analytics": {
+      "$ref": "#/$defs/PublicAnalyticsBlock"
+    },
+    "dimensions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PublicDimension"
+      },
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "evidence": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PublicEvidenceSummary"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "indicators": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PublicIndicator"
+      },
+      "title": "Indicators",
+      "type": "array"
+    },
+    "measurement_contract_version": {
+      "title": "Measurement Contract Version",
+      "type": "string"
+    },
+    "partiality": {
+      "$ref": "#/$defs/Partiality"
+    },
+    "recommendations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PublicRecommendation"
+      },
+      "title": "Recommendations",
+      "type": "array"
+    },
+    "result_schema_version": {
+      "title": "Result Schema Version",
+      "type": "string"
+    },
+    "summary": {
+      "$ref": "#/$defs/PublicSummaryV2"
+    }
+  },
+  "required": [
+    "analysis_id",
+    "result_schema_version",
+    "measurement_contract_version",
+    "summary",
+    "partiality",
+    "analytics"
+  ],
+  "title": "PublicResultV2",
+  "type": "object"
+}

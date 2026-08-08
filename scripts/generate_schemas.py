@@ -24,8 +24,10 @@ sys.path.insert(0, str(RAIZ / "src"))
 
 from result_assembler.contracts.facts import AnalysisFacts  # noqa: E402
 from result_assembler.contracts.result import PublicResult  # noqa: E402
+from result_assembler.contracts.result_v2 import PublicResultV2  # noqa: E402
 from result_assembler.version import (  # noqa: E402
     FACTS_SCHEMA_VERSION,
+    RESULT_SCHEMA_V2_VERSION,
     RESULT_SCHEMA_VERSION,
 )
 
@@ -35,6 +37,14 @@ DESTINO = RAIZ / "schemas"
 ALVOS: tuple[tuple[type, str, str], ...] = (
     (AnalysisFacts, f"{FACTS_SCHEMA_VERSION}.schema.json", FACTS_SCHEMA_VERSION),
     (PublicResult, f"{RESULT_SCHEMA_VERSION}.schema.json", RESULT_SCHEMA_VERSION),
+    # MF6.2 — o documento INTEGRADO. Publicado no MESMO commit do modelo, e nao depois: o
+    # risco §12 do Discovery e justamente a janela em que o produtor emite o que o schema
+    # publicado ainda recusa.
+    (
+        PublicResultV2,
+        f"{RESULT_SCHEMA_V2_VERSION}.schema.json",
+        RESULT_SCHEMA_V2_VERSION,
+    ),
 )
 
 

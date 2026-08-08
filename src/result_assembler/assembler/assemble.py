@@ -30,6 +30,7 @@ from result_assembler.contracts.result import (
     PublicResult,
     PublicSummary,
 )
+from result_assembler.contracts.result_v2 import PublicResultV2
 from result_assembler.errors import UnknownIndicator
 from result_assembler.registry.indicators import (
     CANONICAL_ORDER,
@@ -214,8 +215,14 @@ def assemble(facts: AnalysisFacts) -> AssemblyOutcome:
     return AssemblyOutcome(public_result=publico, internal_manifest=manifesto)
 
 
-def _avisos(publico: PublicResult) -> tuple[str, ...]:
-    """Observações não fatais. Ordenadas para o manifesto ser determinístico também."""
+def _avisos(publico: PublicResult | PublicResultV2) -> tuple[str, ...]:
+    """Observações não fatais. Ordenadas para o manifesto ser determinístico também.
+
+    Aceita os DOIS documentos: ela lê apenas campos que ambos têm (`indicators`,
+    `recommendations`, `evidence`, `partiality`). Alargar a assinatura em vez de duplicar a
+    função é o que impede os dois manifestos de divergirem em avisos — e o `|` a torna
+    VERIFICADA, em vez de uma coincidência que o type checker calava.
+    """
     avisos: list[str] = []
     if not publico.indicators:
         avisos.append("no_indicators_published")

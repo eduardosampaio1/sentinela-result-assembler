@@ -24,6 +24,12 @@ from __future__ import annotations
 from pydantic import ValidationError
 
 from result_assembler.assembler.assemble import AssemblyOutcome, assemble
+from result_assembler.assembler.assemble_v2 import (
+    AssemblyOutcomeV2,
+    RecordCountMismatch,
+    assemble_v2,
+)
+from result_assembler.contracts.analytics import AnalyticsComponent, ComponentStatus
 from result_assembler.contracts.facts import (
     AnalysisFacts,
     AnalysisWindow,
@@ -49,6 +55,11 @@ from result_assembler.contracts.result import (
     PublicRecommendation,
     PublicResult,
     PublicSummary,
+)
+from result_assembler.contracts.result_v2 import (
+    PublicAnalyticsBlock,
+    PublicResultV2,
+    PublicSummaryV2,
 )
 from result_assembler.errors import (
     AssemblyError,
@@ -82,6 +93,7 @@ from result_assembler.validation.safety import validate_evidence_safety
 from result_assembler.version import (
     ASSEMBLER_VERSION,
     FACTS_SCHEMA_VERSION,
+    RESULT_SCHEMA_V2_VERSION,
     RESULT_SCHEMA_VERSION,
     SUPPORTED_FACTS_SCHEMA_VERSIONS,
     SUPPORTED_MEASUREMENT_CONTRACT_VERSIONS,
@@ -162,17 +174,21 @@ __all__ = [
     "FACTS_SCHEMA_VERSION",
     "INDICATOR_REGISTRY",
     "INDICATOR_REGISTRY_VERSION",
+    "RESULT_SCHEMA_V2_VERSION",
     "RESULT_SCHEMA_VERSION",
     "SUPPORTED_DIMENSION_IDS",
     "SUPPORTED_FACTS_SCHEMA_VERSIONS",
     "SUPPORTED_MEASUREMENT_CONTRACT_VERSIONS",
     "AnalysisFacts",
     "AnalysisWindow",
+    "AnalyticsComponent",
     "AssemblyError",
     "AssemblyInvariantViolation",
     "AssemblyOutcome",
+    "AssemblyOutcomeV2",
     "Availability",
     "CalculationProvenance",
+    "ComponentStatus",
     "Denominator",
     "DuplicateIndicator",
     "FactDimension",
@@ -189,14 +205,18 @@ __all__ = [
     "InvalidValue",
     "MissingRequiredFact",
     "Partiality",
+    "PublicAnalyticsBlock",
     "PublicDenominator",
     "PublicDimension",
     "PublicEvidenceSummary",
     "PublicIndicator",
     "PublicRecommendation",
     "PublicResult",
+    "PublicResultV2",
     "PublicSummary",
+    "PublicSummaryV2",
     "Reason",
+    "RecordCountMismatch",
     "SchemaMismatch",
     "UnknownIndicator",
     "UnsafeEvidence",
@@ -204,6 +224,7 @@ __all__ = [
     "UnsupportedMeasurementVersion",
     "VersionsSeen",
     "assemble",
+    "assemble_v2",
     "checksum",
     "parse_facts",
     "serialize_canonical",
