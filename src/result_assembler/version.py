@@ -16,7 +16,13 @@ versões que sabe traduzir.
 from __future__ import annotations
 
 #: Versão desta implementação. Muda quando a MONTAGEM muda, mesmo sem mudar contrato.
-ASSEMBLER_VERSION = "0.1.0"
+#:
+#: **0.2.0** — o Recovery acrescentou `analysis-result-v3`, `analysis-facts-v2` e o catálogo
+#: ARGOS. Este literal viaja no manifesto INTERNO de todo documento montado, então subi-lo
+#: muda o manifesto — e é exatamente o que deve acontecer: o manifesto responde "quem
+#: montou", e quem monta mudou. Mantê-lo em 0.1.0 faria dois assemblers diferentes
+#: assinarem com o mesmo nome, que é o oposto de procedência.
+ASSEMBLER_VERSION = "0.2.0"
 
 #: Contrato de ENTRADA (interno, vindo do domínio analítico).
 FACTS_SCHEMA_VERSION = "analysis-facts-v1"
