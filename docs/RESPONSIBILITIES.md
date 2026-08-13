@@ -25,6 +25,25 @@
 
 O checksum é a única coisa que o assembler "calcula" — e é sobre **bytes**, não sobre analítica. É o hash do documento montado, não uma métrica.
 
+### O que o `analysis-result-v3` acrescentou a esta lista (R2–R7)
+
+| capacidade | onde |
+|---|---|
+| montar o documento ARGOS completo | `assembler/assemble_v3.py` |
+| mapear `kind` do registro → **escala pública** | mapa FECHADO; kind sem escala **para a montagem** |
+| publicar `reason` tipado | o v1 o retinha; sem ele, "não medido" não diz o que fazer |
+| distinguir família **ausente** de família **vazia** | ausente = sem produtor; `[]` = rodou e não achou |
+| promover a moeda ao cabeçalho | **lida** dos indicadores, nunca escolhida |
+| declarar procedência semântica (`domain`) | sem expor `source` técnico |
+| publicar as famílias analíticas | `alerts`, `issues`, `executive_summary` — só do `analysis-facts-v2` |
+
+**Continua não podendo**, e o v3 não afrouxou nada disso: converter escala (`response_stability`
+sai 0..100 e é publicado assim), escolher moeda, inferir faixa de risco, preencher ausência.
+
+A tentação nova é a conversão de escala — há um `ratio_unit` logo ao lado de um valor 0..100.
+O contrato a impede por construção: a escala é declarada e o valor é verificado contra a faixa
+dela, então converter exige trocar a escala declarada, o que é revisável.
+
 ## Não pode
 
 **Calcular**: behavior score · coverage · CPUO · token waste · confidence · drift · volatilidade · economia.

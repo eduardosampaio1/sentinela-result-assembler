@@ -43,8 +43,39 @@ Todos aceitam `calculation_version` `"1.0"` e os cinco estados de disponibilidad
 | **`handoff_rate`** | E | o produtor calcula `1 − useful_rate`. Rodando o código real com 100 conversas / 80 úteis / **zero handoffs**, ele devolve `0.2`. Não é taxa de handoff. Quem quiser handoff usa `handoff_count`, que é **medido** |
 | **`token_waste_estimate`** e derivados | H | a raiz é `int(round(avg_tokens))`, anotada `# proxy` no próprio engine. Proxy serve internamente; como indicador público contratado, não |
 | **"Wasted records"** (rótulo da E5) | G | **não existe produtor**. O produtor real devolve tokens e moeda, nunca "registros desperdiçados" |
-| `global_confidence`, `consistency_score` | H | default `0.0` no contrato torna ausência indistinguível de zero na origem |
-| composto `AI_HEALTH` | H | honesto no domínio (`Measurement` com 5 estados), mas ainda não sai como fato. Entra quando o produtor o emitir |
+| `global_confidence`, `consistency_score` | H | default `0.0` no contrato tornava ausência indistinguível de zero na origem — **reaberto**, ver abaixo |
+| composto `AI_HEALTH` | H | honesto no domínio, não saía como fato — **a condição foi satisfeita**, ver abaixo |
+
+## O que mudou desde a v1 deste registro (R0–R7, 2026-08-12)
+
+Duas linhas da tabela acima descreviam o mundo de então e passaram a descrever o passado.
+Elas ficam aqui porque a razão histórica importa — mas não valem mais como decisão.
+
+**As quatro dimensões de saúde CHEGAM ao fato.** A condição escrita era *"entra quando o
+produtor o emitir"*, e ela foi satisfeita em R1-health: `engine/facts/from_engine_result.py`
+passou a ler `argos_v2["measurements"]`, normalizando `semantic_health → semantic`. O motor
+sempre as compôs — em três sítios de produção de `core/sentinela_engine.py` —, mas a ponte
+não as buscava, e por isso `dimensions` saía `[]` na resposta real.
+
+**`global_confidence` e `consistency_score` foram reabertos por decisão de produto.** O
+problema técnico que os excluiu é real e continua de pé: o produtor devolve `0.0` sem dado.
+O que mudou é o entendimento de que isso pede outro **envelope**, não exclusão —
+`PublicMeasurement` no `analysis-result-v3` separa valor de disponibilidade, e ausência
+passa a ter motivo em vez de virar zero. Publicá-los depende de o produtor emitir
+`Measurement` em vez de float, o que ainda não aconteceu.
+
+**`token_waste_estimate` e derivados continuam fora, e agora com estado nomeado.** O
+catálogo (`registry/argos_catalog.py`) os marca `BLOCKED_BY_MEASUREMENT_SEMANTICS`. A
+distinção é deliberada: eles não são `not_measured` — *"tentamos medir e não deu"* — mas
+"o produto decidiu não publicar", porque o produtor mede `int(round(avg_tokens))` e o nome
+promete desperdício. Envelope resolve ausência representada como zero; não resolve métrica
+semanticamente errada.
+
+**Existe agora um catálogo nominal.** `registry/argos_catalog.py` lista os **39** outputs
+quantitativos do ARGOS — 34 do documento de produto e 5 descobertos no contrato público — e
+`tests/test_catalogo_argos.py` prova que a conta fecha e que registro e catálogo não
+divergem. Antes disso nada comparava o que o motor produz com o que o produto publica, e
+foi por isso que 26 métricas puderam sumir sem ninguém recusar nenhuma.
 
 ## Dimensões
 
