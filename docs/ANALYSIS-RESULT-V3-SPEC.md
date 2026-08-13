@@ -308,6 +308,30 @@ O Engine **consome** moeda; não a inventa. Sem moeda declarada, os cinco monet�
 `not_measured` + `dependency_unavailable`. **Nunca inferir USD** — nem do nome do campo
 (`estimated_cost_usd`), que é de onde a fixture tirou a sua.
 
+### 6.1 Estado da implementação (R1-currency)
+
+| peça | onde | estado |
+|---|---|---|
+| id canônico reservado + ISO-4217 obrigatório | `ingestion_service/contracts/regra_de_medida.py` | ✅ |
+| leitura canônica, batch e streaming | `engine/business/cost_input.py` | ✅ |
+| moeda viaja com o valor até o fato | `engine/facts/from_engine_result.py::extrair_moeda` | ✅ |
+| motivo (`no_input_data` × `dependency_unavailable`) atravessa | `producer.py::_indicador` | ✅ |
+| extrator legado neutralizado + gate por AST | `_extract_trace_cost_LEGADO` | ✅ |
+
+**Um leitor monetário por nome de campo ainda existe** e precisa da mesma canonização:
+`impact_model.py::explicit_handoff_cost` lê `outcome.handoff_cost_usd` /
+`observed_handoff_cost_usd`. Ele é o **custo unitário observado de um handoff** — per-record,
+como o custo da conversa —, e a saída natural é um segundo id reservado (`handoff_cost`),
+seguindo o mesmo padrão. Não foi feito em R1-currency: é escopo além do custo por conversa, e
+exige decisão sobre como declarar um custo que só existe nos registros que tiveram handoff.
+
+> **Anotação de arqueologia.** Ao separar as fontes, apareceu um `payload` de `impact_model`
+> com **seis chaves duplicadas no mesmo literal** — atribuídas de `observed_metrics` e
+> reatribuídas de `unit_economics` logo abaixo. Python fica com a última, então metade era
+> código morto desde sempre. Passou despercebido porque as duas fontes davam o mesmo número
+> por coincidência aritmética (`12.0 × 6 handoffs = 72.0`). As mortas foram removidas
+> preservando a fonte viva — apagar código morto não é escolher significado novo.
+
 ---
 
 ## 7. Versionamento e compatibilidade
