@@ -1,6 +1,23 @@
 # Integração
 
-**Estado: não integrado.** Nenhum dos três repositórios foi alterado. Este documento é o plano, não o registro de algo feito.
+**Estado: INTEGRADO.** O plano abaixo foi executado; este cabeçalho registra onde ele chegou,
+e o corpo permanece como o desenho original — útil para entender por que cada peça é como é.
+
+| face | estado |
+|---|---|
+| produtor de facts (`analysis-facts-v1`/`v2`) | existe, no `sentinela-facts` |
+| `assemble()` → `analysis-result-v1` | em produção pelo Orchestrator |
+| `assemble_v3()` → `analysis-result-v3` | em produção, servido por negociação de versão |
+| versão consumida | **0.2.0**, presa por `vendor/result-assembler.lock.json` (sha256 dos bytes) |
+
+O `analysis-result-v3` é ARGOS-only e obrigatório para o ARGOS; o v1 segue servido a quem não
+negocia, e o v2 (Engine + Analytics) está congelado como legado compatível. O fechamento da
+propagação — o que ficou provado, por qual caminho, e o que **não** ficou — está em
+`sentinela-orchestrator/docs/argos-v3-release-propagation.md`.
+
+> Este parágrafo existe porque a linha que ele substitui — "não integrado, nenhum dos três
+> repositórios foi alterado" — continuou verdadeira por meses e depois falsa por meses, sem
+> nada no repositório denunciando a virada.
 
 ## Onde o assembler encaixa
 
