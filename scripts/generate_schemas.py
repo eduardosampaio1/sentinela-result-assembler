@@ -22,11 +22,14 @@ from typing import Any
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "src"))
 
-from result_assembler.contracts.facts import AnalysisFacts  # noqa: E402
+from result_assembler.contracts.facts import AnalysisFacts, AnalysisFactsV2  # noqa: E402
 from result_assembler.contracts.result import PublicResult  # noqa: E402
 from result_assembler.contracts.result_v2 import PublicResultV2  # noqa: E402
+from result_assembler.contracts.result_v3 import PublicResultV3  # noqa: E402
 from result_assembler.version import (  # noqa: E402
+    FACTS_SCHEMA_V2_VERSION,
     FACTS_SCHEMA_VERSION,
+    RESULT_SCHEMA_V3_VERSION,
     RESULT_SCHEMA_V2_VERSION,
     RESULT_SCHEMA_VERSION,
 )
@@ -36,6 +39,10 @@ DESTINO = RAIZ / "schemas"
 #: (modelo, nome do arquivo, `$id`) — a lista é o contrato do que existe publicado.
 ALVOS: tuple[tuple[type, str, str], ...] = (
     (AnalysisFacts, f"{FACTS_SCHEMA_VERSION}.schema.json", FACTS_SCHEMA_VERSION),
+    # R4 — a entrada que carrega as familias analiticas. O v1 acima fica intocado.
+    (AnalysisFactsV2, f"{FACTS_SCHEMA_V2_VERSION}.schema.json", FACTS_SCHEMA_V2_VERSION),
+    # R2/R3 — a saida publica do ARGOS completo.
+    (PublicResultV3, f"{RESULT_SCHEMA_V3_VERSION}.schema.json", RESULT_SCHEMA_V3_VERSION),
     (PublicResult, f"{RESULT_SCHEMA_VERSION}.schema.json", RESULT_SCHEMA_VERSION),
     # MF6.2 — o documento INTEGRADO. Publicado no MESMO commit do modelo, e nao depois: o
     # risco §12 do Discovery e justamente a janela em que o produtor emite o que o schema

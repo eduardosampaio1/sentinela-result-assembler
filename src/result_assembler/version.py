@@ -31,9 +31,21 @@ RESULT_SCHEMA_VERSION = "analysis-result-v1"
 #: nunca foi "quebra × não quebra": era **quem** quebra. O v1 permanece exatamente como está.
 RESULT_SCHEMA_V2_VERSION = "analysis-result-v2"
 
+#: Contrato de ENTRADA que carrega as familias ANALITICAS e as formas que o v1 nao tinha.
+#:
+#: v2 pelo mesmo motivo do resultado: `additionalProperties: false` faz de qualquer acrescimo
+#: uma quebra para quem valida contra o schema publicado, inclusive campo opcional. Um
+#: documento v1 que trouxesse `alerts` seria invalido contra o proprio schema que ele declara.
+FACTS_SCHEMA_V2_VERSION = "analysis-facts-v2"
+
+#: Contrato de SAIDA publico do ARGOS completo. Nao carrega Analytics.
+RESULT_SCHEMA_V3_VERSION = "analysis-result-v3"
+
 #: Versões do contrato de MEDIÇÃO que este assembler sabe interpretar. Fail-closed:
 #: uma versão fora desta lista é recusada, nunca montada "no melhor esforço".
 SUPPORTED_MEASUREMENT_CONTRACT_VERSIONS: frozenset[str] = frozenset({"measurement-1.0"})
 
 #: Versões do contrato de ENTRADA aceitas.
-SUPPORTED_FACTS_SCHEMA_VERSIONS: frozenset[str] = frozenset({FACTS_SCHEMA_VERSION})
+SUPPORTED_FACTS_SCHEMA_VERSIONS: frozenset[str] = frozenset(
+    {FACTS_SCHEMA_VERSION, FACTS_SCHEMA_V2_VERSION}
+)

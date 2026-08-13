@@ -203,3 +203,77 @@ def test_a_mesma_entrada_produz_o_mesmo_documento() -> None:
     a = assemble_v3(massa("massa_a_principal.facts.json")).public_result.model_dump(mode="json")
     b = assemble_v3(massa("massa_a_principal.facts.json")).public_result.model_dump(mode="json")
     assert json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# 8. R4 — famílias analíticas, e a distinção que elas obrigam
+# ═══════════════════════════════════════════════════════════════════════════════════════
+
+
+def _v2(**extra):
+    """A massa principal promovida a `analysis-facts-v2`, com as famílias pedidas."""
+    bruto = json.loads((FIXTURES / "massa_a_principal.facts.json").read_text(encoding="utf-8"))
+    bruto["facts_schema_version"] = "analysis-facts-v2"
+    bruto.update(extra)
+    from result_assembler.contracts.facts import AnalysisFactsV2
+
+    return AnalysisFactsV2.model_validate(bruto)
+
+
+def test_o_v1_NAO_pode_carregar_familia_que_o_schema_v1_nao_declara() -> None:
+    # Sem esta recusa um produtor emitiria `alerts` dizendo-se v1, e o documento seria
+    # inválido contra o próprio schema que ele declara — sem ninguém notar até um validador
+    # externo reclamar.
+    from result_assembler.contracts.facts import AnalysisFactsV2
+
+    bruto = json.loads((FIXTURES / "massa_a_principal.facts.json").read_text(encoding="utf-8"))
+    with pytest.raises(Exception, match="analysis-facts-v2"):
+        AnalysisFactsV2.model_validate(bruto)  # ainda diz v1
+
+
+def test_alertas_produzidos_chegam_ao_documento() -> None:
+    doc = assemble_v3(_v2(alerts=[{
+        "id": "a1", "severity": "high", "code": "cross_intent_reuse",
+        "title": "Respostas muito parecidas entre intenções",
+        "affected_intents": ["reset_senha", "prazo_entrega"],
+    }])).public_result
+    assert len(doc.alerts) == 1
+    assert doc.alerts[0].code == "cross_intent_reuse"
+    assert doc.alerts[0].affected_intents == ("reset_senha", "prazo_entrega")
+
+
+def test_produtor_que_RODOU_e_nao_achou_publica_lista_vazia() -> None:
+    doc = assemble_v3(_v2(alerts=[])).public_result
+    assert doc.alerts == ()
+
+
+def test_produtor_AUSENTE_omite_o_campo() -> None:
+    # A distinção inteira, num par de casos. `[]` diz "procuramos e não achamos"; ausente
+    # diz "ninguém procurou". Foi `evidence: []` fixo que passou anos dizendo a primeira
+    # sobre uma capacidade que era a segunda.
+    doc = assemble_v3(_v2()).public_result
+    assert doc.alerts is None
+    assert doc.issues is None
+    assert doc.executive_summary is None
+
+
+def test_a_distincao_das_familias_analiticas_sobrevive_ao_JSON() -> None:
+    vazio = assemble_v3(_v2(alerts=[])).public_result.model_dump(mode="json")
+    ausente = assemble_v3(_v2()).public_result.model_dump(mode="json")
+    assert vazio["alerts"] == []
+    assert ausente["alerts"] is None
+
+
+def test_o_resumo_executivo_declara_idioma() -> None:
+    # Um texto sem idioma declarado não tem como ser apresentado honestamente a quem lê
+    # noutro — e o `PublicSummary` do v1 nunca teve onde guardar nem o texto nem o idioma.
+    doc = assemble_v3(_v2(executive_summary={
+        "language": "pt-BR", "text": "A saúde da IA está em 61,9%.", "generated_by": "engine",
+    })).public_result
+    assert doc.executive_summary.language == "pt-BR"
+
+
+def test_fatos_v1_seguem_montando_sem_as_familias(principal) -> None:
+    # Compatibilidade: o v1 continua entrando, e o que ele não declara sai ausente.
+    assert principal.alerts is None
+    assert principal.indicators

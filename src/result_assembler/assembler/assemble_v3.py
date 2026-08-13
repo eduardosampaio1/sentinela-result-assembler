@@ -26,6 +26,7 @@ from dataclasses import dataclass
 
 from result_assembler.contracts.facts import (
     AnalysisFacts,
+    AnalysisFactsV2,
     Availability,
     FactDimension,
     FactIndicator,
@@ -41,6 +42,9 @@ from result_assembler.contracts.result import (
 from result_assembler.contracts.result_v3 import (
     RESULT_V3_SCHEMA_VERSION,
     Domain,
+    PublicAlert,
+    PublicExecutiveSummary,
+    PublicIssue,
     MethodMetadata,
     PublicIndicatorV3,
     PublicMeasurement,
@@ -191,6 +195,43 @@ def _moeda_declarada(indicadores: tuple[PublicIndicatorV3, ...]) -> str | None:
     return next(iter(moedas)) if len(moedas) == 1 else None
 
 
+def _publicar_familias_analiticas(facts: AnalysisFacts) -> dict[str, object]:
+    """As familias que so o `analysis-facts-v2` carrega.
+
+    Fatos v1 nao as declaram — nem vazias. Devolver `{}` faz os campos sairem AUSENTES do
+    documento, que e o que "ninguem produziu" quer dizer. Se um dia alguem trocar isto por
+    `()`, o consumidor passa a ler "procuramos alertas e nao achamos" sobre uma analise que
+    nunca procurou.
+    """
+    if not isinstance(facts, AnalysisFactsV2):
+        return {}
+
+    saida: dict[str, object] = {}
+    if facts.alerts is not None:
+        saida["alerts"] = tuple(
+            PublicAlert(
+                id=a.id, severity=a.severity, code=a.code, title=a.title,
+                detail=a.detail, evidence_refs=a.evidence_refs,
+                affected_intents=a.affected_intents,
+            )
+            for a in facts.alerts
+        )
+    if facts.issues is not None:
+        saida["issues"] = tuple(
+            PublicIssue(
+                id=i.id, severity=i.severity, code=i.code, title=i.title,
+                evidence_refs=i.evidence_refs,
+            )
+            for i in facts.issues
+        )
+    if facts.executive_summary is not None:
+        resumo = facts.executive_summary
+        saida["executive_summary"] = PublicExecutiveSummary(
+            language=resumo.language, text=resumo.text, generated_by=resumo.generated_by
+        )
+    return saida
+
+
 def assemble_v3(facts: AnalysisFacts) -> AssemblyV3Outcome:
     """`analysis-facts-*` → `analysis-result-v3`.
 
@@ -234,5 +275,6 @@ def assemble_v3(facts: AnalysisFacts) -> AssemblyV3Outcome:
         dimensions=dimensoes or None,
         recommendations=recomendacoes or None,
         evidence=evidencias or None,
+        **_publicar_familias_analiticas(facts),
     )
     return AssemblyV3Outcome(public_result=publico)

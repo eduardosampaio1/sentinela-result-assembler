@@ -1,0 +1,1025 @@
+{
+  "$defs": {
+    "Availability": {
+      "description": "Estado da medição — NUNCA derivado do valor.\n\nEspelha `core/contracts/measurement.py::Availability` do domínio.",
+      "enum": [
+        "available",
+        "partial",
+        "unavailable",
+        "not_evaluable",
+        "failed"
+      ],
+      "title": "Availability",
+      "type": "string"
+    },
+    "Domain": {
+      "description": "Procedência SEMÂNTICA. Fechada.\n\nNão é `source` técnico — `engine.business.cost_estimators…` continua retido, porque\nrevela implementação e não acrescenta nada a quem consome. Isto responde outra\npergunta: *de que domínio veio este número?*\n\nO discovery levantou o risco: com produtores múltiplos no futuro, o consumidor pareia\npor `id` sem saber se está comparando comportamento com economia. Quatro valores\nresolvem isso sem expor nada.",
+      "enum": [
+        "semantic",
+        "behavioral",
+        "structural",
+        "economic"
+      ],
+      "title": "Domain",
+      "type": "string"
+    },
+    "IndicatorState": {
+      "description": "O que o consumidor precisa saber ANTES de olhar o valor.\n\nMapeado 1-para-1 a partir da disponibilidade dos fatos; nunca inferido do valor.",
+      "enum": [
+        "measured",
+        "partially_measured",
+        "not_measured",
+        "not_applicable",
+        "calculation_failed"
+      ],
+      "title": "IndicatorState",
+      "type": "string"
+    },
+    "MethodMetadata": {
+      "additionalProperties": false,
+      "description": "Parâmetros do método, e a moeda da análise.\n\n`min_samples_per_intent` mora aqui e não em `indicators[]` porque é **configuração**,\nnão medida observada. Publicá-lo como indicador o faria parecer algo que a amostra\nrevelou.",
+      "properties": {
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "currency_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency Source"
+        },
+        "min_samples_per_intent": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Samples Per Intent"
+        }
+      },
+      "title": "MethodMetadata",
+      "type": "object"
+    },
+    "Partiality": {
+      "additionalProperties": false,
+      "description": "Declara explicitamente se o resultado é completo — em vez de deixar o consumidor\ninferir pela ausência.\n\nNão existe lista de \"indicadores excluídos\" porque a montagem é **fail-closed**: um\nindicador desconhecido ou uma versão incompatível recusam a montagem inteira, não são\nomitidos em silêncio. Logo, todo indicador que os fatos trouxeram está aqui — o que\nvaria é o ESTADO de cada um, e é isso que `reasons` resume.",
+      "properties": {
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "complete",
+        "reasons"
+      ],
+      "title": "Partiality",
+      "type": "object"
+    },
+    "PublicAlert": {
+      "additionalProperties": false,
+      "description": "Um alerta do ARGOS. A CONTAGEM é métrica (`critical_alert_count`); isto é o conteúdo.",
+      "properties": {
+        "affected_intents": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Affected Intents",
+          "type": "array"
+        },
+        "code": {
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        },
+        "evidence_refs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "severity": {
+          "minLength": 1,
+          "title": "Severity",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "severity",
+        "code",
+        "title"
+      ],
+      "title": "PublicAlert",
+      "type": "object"
+    },
+    "PublicDenominator": {
+      "additionalProperties": false,
+      "description": "Sobre o que a razão foi calculada — publicado para permitir auditoria.",
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ],
+      "title": "PublicDenominator",
+      "type": "object"
+    },
+    "PublicEvidenceSummary": {
+      "additionalProperties": false,
+      "description": "Resumo agregado de evidência — só campos da allowlist.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Label"
+        },
+        "observed_count": {
+          "title": "Observed Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "observed_count",
+        "label"
+      ],
+      "title": "PublicEvidenceSummary",
+      "type": "object"
+    },
+    "PublicExecutiveSummary": {
+      "additionalProperties": false,
+      "description": "O resumo executivo, textual.\n\n`language` é obrigatório: um texto sem idioma declarado não tem como ser apresentado\nhonestamente a quem lê noutro, e o `PublicSummary` do v1 — que só tem `analyzed_at` e\n`record_count` — nunca teve onde guardá-lo.",
+      "properties": {
+        "generated_by": {
+          "default": "engine",
+          "title": "Generated By",
+          "type": "string"
+        },
+        "language": {
+          "minLength": 2,
+          "title": "Language",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "language",
+        "text"
+      ],
+      "title": "PublicExecutiveSummary",
+      "type": "object"
+    },
+    "PublicIndicatorV3": {
+      "additionalProperties": false,
+      "description": "Indicador de negócio escalar. A forma do v1, mais o que faltava.\n\nGanha `reason` (o v1 publicava só `state`, e \"não medido\" sem motivo não diz a quem lê\no que fazer), `scale` e `domain`.",
+      "properties": {
+        "coverage": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Coverage"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "denominator": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicDenominator"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "display_precision": {
+          "default": 4,
+          "title": "Display Precision",
+          "type": "integer"
+        },
+        "domain": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Domain"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "scale": {
+          "$ref": "#/$defs/Scale"
+        },
+        "state": {
+          "$ref": "#/$defs/IndicatorState"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "id",
+        "state",
+        "reason",
+        "value",
+        "kind",
+        "scale"
+      ],
+      "title": "PublicIndicatorV3",
+      "type": "object"
+    },
+    "PublicIntent": {
+      "additionalProperties": false,
+      "description": "Uma intenção, com seu escore e o suporte amostral que o sustenta.\n\nAchatar isto em `indicators[]` perderia a identidade da intenção: seis intenções\nvirariam seis indicadores com ids sintéticos, e a lista de sub-representadas — que o\nrelatório do produto já mostra — precisaria de uma segunda estrutura para existir.",
+      "properties": {
+        "intent_id": {
+          "minLength": 1,
+          "title": "Intent Id",
+          "type": "string"
+        },
+        "response_stability": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicMeasurement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "response_variance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicMeasurement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "score": {
+          "$ref": "#/$defs/PublicMeasurement"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Severity"
+        },
+        "support": {
+          "minimum": 0,
+          "title": "Support",
+          "type": "integer"
+        },
+        "underrepresented": {
+          "default": false,
+          "title": "Underrepresented",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "intent_id",
+        "score",
+        "support"
+      ],
+      "title": "PublicIntent",
+      "type": "object"
+    },
+    "PublicIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "severity": {
+          "minLength": 1,
+          "title": "Severity",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "severity",
+        "code",
+        "title"
+      ],
+      "title": "PublicIssue",
+      "type": "object"
+    },
+    "PublicMeasurement": {
+      "additionalProperties": false,
+      "description": "Uma medição pública: valor separado de disponibilidade, com motivo.\n\nInvariantes verificados na construção — e cada um existe por um defeito real:\n\n1. `available` exige valor. Sem isto, \"medido\" sem número seria representável.\n2. Ausente/não-aplicável/falhou **proíbe** valor. É o absence-as-zero pelo avesso:\n   impede um número sobreviver ao lado de um estado que diz que ele não existe.\n3. `partial` exige valor **e** cobertura < 1. Parcial sem cobertura declarada é\n   \"medido\" com uma ressalva que ninguém consegue quantificar.\n4. `reason == OK` se e somente se há valor. Um motivo de falha ao lado de um número, ou\n   um `ok` ao lado de ausência, são contradições que o consumidor leria como dado.\n5. O valor respeita a faixa da escala. `1.4` num `ratio_unit` é erro de montagem, não\n   arredondamento.",
+      "properties": {
+        "availability": {
+          "$ref": "#/$defs/Availability"
+        },
+        "data_coverage": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Coverage"
+        },
+        "domain": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Domain"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "method_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method Version"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "scale": {
+          "$ref": "#/$defs/Scale"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "id",
+        "value",
+        "availability",
+        "reason",
+        "scale"
+      ],
+      "title": "PublicMeasurement",
+      "type": "object"
+    },
+    "PublicProjection": {
+      "additionalProperties": false,
+      "description": "Uma projeção monetária, com o horizonte como DADO.\n\n`projected_token_cost@month` e `@year` são a mesma métrica em horizontes diferentes.\nCodificar o horizonte no nome faria quatro métricas onde há duas, e obrigaria o\nconsumidor a fazer parsing de identificador para agrupar.",
+      "properties": {
+        "basis": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Basis"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "horizon": {
+          "minLength": 1,
+          "title": "Horizon",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "measurement": {
+          "$ref": "#/$defs/PublicMeasurement"
+        }
+      },
+      "required": [
+        "id",
+        "horizon",
+        "measurement"
+      ],
+      "title": "PublicProjection",
+      "type": "object"
+    },
+    "PublicRecommendation": {
+      "additionalProperties": false,
+      "description": "Recomendação transportada na ordem e prioridade do domínio.",
+      "properties": {
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Category"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "priority": {
+          "title": "Priority",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "priority",
+        "category",
+        "evidence_refs"
+      ],
+      "title": "PublicRecommendation",
+      "type": "object"
+    },
+    "PublicRisk": {
+      "additionalProperties": false,
+      "description": "Um risco declarado pelo produtor.",
+      "properties": {
+        "band": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Band"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "measurement": {
+          "$ref": "#/$defs/PublicMeasurement"
+        }
+      },
+      "required": [
+        "id",
+        "measurement"
+      ],
+      "title": "PublicRisk",
+      "type": "object"
+    },
+    "PublicScore": {
+      "additionalProperties": false,
+      "description": "Escore global. Adimensional ou normalizado, nunca por unidade de negócio.",
+      "properties": {
+        "composite_of": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Composite Of",
+          "type": "array"
+        },
+        "measurement": {
+          "$ref": "#/$defs/PublicMeasurement"
+        },
+        "window_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Window Kind"
+        },
+        "window_size": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Window Size"
+        }
+      },
+      "required": [
+        "measurement"
+      ],
+      "title": "PublicScore",
+      "type": "object"
+    },
+    "PublicSummary": {
+      "additionalProperties": false,
+      "description": "Cabeçalho legível da análise.",
+      "properties": {
+        "analyzed_at": {
+          "title": "Analyzed At",
+          "type": "string"
+        },
+        "record_count": {
+          "title": "Record Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "record_count",
+        "analyzed_at"
+      ],
+      "title": "PublicSummary",
+      "type": "object"
+    },
+    "Reason": {
+      "description": "Motivo tipado, para máquina. Espelha `MeasurementReason` do domínio.",
+      "enum": [
+        "ok",
+        "no_input_data",
+        "insufficient_sample",
+        "single_group",
+        "missing_dimension",
+        "dependency_unavailable",
+        "not_applicable",
+        "computation_error"
+      ],
+      "title": "Reason",
+      "type": "string"
+    },
+    "Scale": {
+      "additionalProperties": false,
+      "description": "A escala declarada de uma medição.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ScaleKind"
+        },
+        "maximum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum"
+        },
+        "minimum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "Scale",
+      "type": "object"
+    },
+    "ScaleKind": {
+      "description": "A faixa em que o número vive. Declarada, nunca inferida.\n\n`SCORE_100` existe porque `response_stability` é produzido em 0..100 e **é publicado\nassim**. Dividir por 100 na fronteira de publicação seria normalização numérica não\nautorizada: mudar a escala de uma medida é decisão metodológica do produtor, e um\nconsumidor que recebe 0..1 onde o motor mediu 0..100 não tem como saber que a conversão\naconteceu.",
+      "enum": [
+        "ratio_unit",
+        "score_100",
+        "percent",
+        "currency",
+        "count",
+        "duration",
+        "raw"
+      ],
+      "title": "ScaleKind",
+      "type": "string"
+    }
+  },
+  "$id": "analysis-result-v3",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "`analysis-result-v3`.\n\nToda família é `None` por default, e a diferença importa: `None` diz que a capacidade\nnão existe neste documento; `()` diz que ela existe, executou e não produziu item. Um\nconsumidor que vê `alerts: []` sabe que a análise procurou alertas e não achou; um que\nvê o campo ausente sabe que ninguém procurou.",
+  "properties": {
+    "alerts": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/PublicAlert"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Alerts"
+    },
+    "analysis_id": {
+      "minLength": 1,
+      "title": "Analysis Id",
+      "type": "string"
+    },
+    "argos_catalog_version": {
+      "minLength": 1,
+      "title": "Argos Catalog Version",
+      "type": "string"
+    },
+    "dimensions": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/PublicMeasurement"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dimensions"
+    },
+    "evidence": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/PublicEvidenceSummary"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Evidence"
+    },
+    "executive_summary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PublicExecutiveSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "indicator_registry_version": {
+      "minLength": 1,
+      "title": "Indicator Registry Version",
+      "type": "string"
+    },
+    "indicators": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/PublicIndicatorV3"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Indicators"
+    },
+    "intents": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/PublicIntent"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Intents"
+    },
+    "issues": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/PublicIssue"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Issues"
+    },
+    "measurement_contract_version": {
+      "minLength": 1,
+      "title": "Measurement Contract Version",
+      "type": "string"
+    },
+    "method": {
+      "$ref": "#/$defs/MethodMetadata"
+    },
+    "partiality": {
+      "$ref": "#/$defs/Partiality"
+    },
+    "projections": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/PublicProjection"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Projections"
+    },
+    "recommendations": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/PublicRecommendation"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recommendations"
+    },
+    "result_schema_version": {
+      "default": "analysis-result-v3",
+      "title": "Result Schema Version",
+      "type": "string"
+    },
+    "risks": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/PublicRisk"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Risks"
+    },
+    "scores": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/PublicScore"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Scores"
+    },
+    "summary": {
+      "$ref": "#/$defs/PublicSummary"
+    }
+  },
+  "required": [
+    "analysis_id",
+    "indicator_registry_version",
+    "measurement_contract_version",
+    "argos_catalog_version",
+    "summary",
+    "method",
+    "partiality"
+  ],
+  "title": "PublicResultV3",
+  "type": "object"
+}

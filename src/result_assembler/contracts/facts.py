@@ -20,7 +20,7 @@ import math
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
 
 class FactsModel(BaseModel):
@@ -251,6 +251,49 @@ class CalculationProvenance(FactsModel):
     dataset_fingerprint: str | None = None
 
 
+
+class FactAlert(FactsModel):
+    """Um alerta detectado pelo dominio. **Saida analitica, nao metrica.**
+
+    A CONTAGEM de alertas criticos e metrica (`critical_alert_count`, no catalogo). Isto e
+    o conteudo. Publicar os dois na mesma familia apagaria a diferenca entre "quantos" e
+    "quais", e so a primeira e comparavel entre analises.
+    """
+
+    id: str = Field(min_length=1)
+    severity: str = Field(min_length=1)
+    #: Estavel, para maquina. O titulo e para gente e pode mudar de redacao sem que o
+    #: alerta mude de natureza — por isso os dois campos, e nao um.
+    code: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    detail: str | None = None
+    evidence_refs: tuple[str, ...] = ()
+    affected_intents: tuple[str, ...] = ()
+
+
+class FactIssue(FactsModel):
+    """Um problema estrutural detectado. Distinto de alerta: alerta pede atencao agora."""
+
+    id: str = Field(min_length=1)
+    severity: str = Field(min_length=1)
+    code: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    evidence_refs: tuple[str, ...] = ()
+
+
+class FactExecutiveSummary(FactsModel):
+    """O resumo executivo, textual.
+
+    `language` e obrigatorio. Um texto sem idioma declarado nao tem como ser apresentado
+    honestamente a quem le noutro — e o `PublicSummary` do v1, que so tem `analyzed_at` e
+    `record_count`, nunca teve onde guardar nem o texto nem o idioma.
+    """
+
+    language: str = Field(min_length=2)
+    text: str = Field(min_length=1)
+    generated_by: str = "engine"
+
+
 class AnalysisFacts(FactsModel):
     """Envelope de entrada `analysis-facts-v1`."""
 
@@ -263,3 +306,33 @@ class AnalysisFacts(FactsModel):
     dimensions: tuple[FactDimension, ...] = ()
     recommendations: tuple[FactRecommendation, ...] = ()
     evidence: tuple[FactEvidenceSummary, ...] = ()
+
+
+class AnalysisFactsV2(AnalysisFacts):
+    """Envelope `analysis-facts-v2` — o v1 mais as familias ANALITICAS.
+
+    Subclasse, e nao campos opcionais no v1, pela mesma razao que o `analysis-result-v2` e
+    um arquivo a parte: `additionalProperties: false` faz de qualquer acrescimo uma quebra
+    para quem valida contra o schema publicado. Um documento v1 que trouxesse `alerts` seria
+    invalido contra o proprio schema que ele declara — e ninguem notaria ate um validador
+    externo reclamar.
+
+    Assim o schema do v1 fica intocado, byte a byte, e o v2 tem o seu.
+
+    `None` e ausencia de PRODUTOR; `()` e produtor que rodou e nao achou.
+    """
+
+    alerts: tuple[FactAlert, ...] | None = None
+    issues: tuple[FactIssue, ...] | None = None
+    executive_summary: FactExecutiveSummary | None = None
+
+    @model_validator(mode="after")
+    def _declara_a_versao_certa(self) -> "AnalysisFactsV2":
+        from result_assembler.version import FACTS_SCHEMA_V2_VERSION
+
+        if self.facts_schema_version != FACTS_SCHEMA_V2_VERSION:
+            raise ValueError(
+                f"`AnalysisFactsV2` exige `{FACTS_SCHEMA_V2_VERSION}`; recebido "
+                f"`{self.facts_schema_version}`"
+            )
+        return self
