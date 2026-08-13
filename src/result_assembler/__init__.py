@@ -24,6 +24,7 @@ from __future__ import annotations
 from pydantic import ValidationError
 
 from result_assembler.assembler.assemble import AssemblyOutcome, assemble
+from result_assembler.assembler.assemble_v3 import AssemblyV3Outcome, assemble_v3
 from result_assembler.assembler.assemble_v2 import (
     AssemblyOutcomeV2,
     RecordCountMismatch,
@@ -224,6 +225,8 @@ __all__ = [
     "UnsupportedMeasurementVersion",
     "VersionsSeen",
     "assemble",
+    "assemble_v3",
+    "AssemblyV3Outcome",
     "assemble_v2",
     "checksum",
     "parse_facts",
