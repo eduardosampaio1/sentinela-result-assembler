@@ -106,20 +106,38 @@ def test_disponivel_exige_valor() -> None:
         )
 
 
-def test_ok_e_ausencia_se_contradizem() -> None:
-    with pytest.raises(ValidationError, match="se contradizem"):
+def test_ausencia_com_ok_e_recusada() -> None:
+    # Ausência precisa dizer por quê. `ok` ao lado de `None` seria "não medimos, e está
+    # tudo bem" — que não informa nada a quem precisa decidir o que fazer.
+    with pytest.raises(ValidationError, match="ausência precisa dizer por quê"):
         PublicMeasurement(
             id="x", value=None, availability=Availability.UNAVAILABLE,
             reason=Reason.OK, scale=RATIO,
         )
 
 
-def test_motivo_de_falha_ao_lado_de_numero_se_contradiz() -> None:
-    with pytest.raises(ValidationError, match="se contradizem"):
+def test_medido_por_inteiro_nao_carrega_motivo_de_ressalva() -> None:
+    with pytest.raises(ValidationError, match="não tem motivo de ressalva"):
         PublicMeasurement(
             id="x", value=0.5, availability=Availability.AVAILABLE,
             reason=Reason.INSUFFICIENT_SAMPLE, scale=RATIO,
         )
+
+
+def test_PARCIAL_tem_valor_E_motivo_e_isso_e_legitimo() -> None:
+    """A exceção deliberada, e a razão de ela existir.
+
+    A primeira versão deste contrato dizia `reason == OK` se e somente se há valor. A massa
+    `massa_d_parcial` a derrubou na primeira execução: o composto AI_HEALTH chega `partial`,
+    com valor e com `missing_dimension` — o motivo é o que EXPLICA a parcialidade, e o valor
+    continua valendo sobre o que sobrou. A regra estava errada, não o dado.
+    """
+    m = PublicMeasurement(
+        id="ai_health_score", value=0.62, availability=Availability.PARTIAL,
+        reason=Reason.MISSING_DIMENSION, data_coverage=0.75, scale=RATIO,
+    )
+    assert m.value == 0.62
+    assert m.reason is Reason.MISSING_DIMENSION
 
 
 def test_parcial_exige_cobertura_declarada_e_menor_que_um() -> None:

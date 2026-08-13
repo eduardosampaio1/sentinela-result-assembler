@@ -134,8 +134,14 @@ class PublicMeasurement(ResultV3Model):
        impede um número sobreviver ao lado de um estado que diz que ele não existe.
     3. `partial` exige valor **e** cobertura < 1. Parcial sem cobertura declarada é
        "medido" com uma ressalva que ninguém consegue quantificar.
-    4. `reason == OK` se e somente se há valor. Um motivo de falha ao lado de um número, ou
-       um `ok` ao lado de ausência, são contradições que o consumidor leria como dado.
+    4. Ausência **proíbe** `reason=OK`, e `available` **exige** `reason=OK`. `partial` é a
+       exceção deliberada: ele tem valor **e** motivo, porque o motivo é o que EXPLICA a
+       parcialidade — `missing_dimension` num composto de saúde diz qual peça faltou, e o
+       valor continua valendo sobre o que sobrou.
+
+       A primeira versão desta regra dizia `reason == OK` se e somente se há valor, e a
+       massa `massa_d_parcial` a derrubou na primeira execução: o composto AI_HEALTH chega
+       parcial, com valor e com `missing_dimension`. A regra estava errada, não o dado.
     5. O valor respeita a faixa da escala. `1.4` num `ratio_unit` é erro de montagem, não
        arredondamento.
     """
@@ -180,10 +186,15 @@ class PublicMeasurement(ResultV3Model):
                     "cobertura declarada é 'medido' com uma ressalva não quantificável"
                 )
 
-        if (self.reason is Reason.OK) != tem_valor:
+        if self.availability is Availability.AVAILABLE and self.reason is not Reason.OK:
             raise ValueError(
-                f"`{self.id}`: `reason={self.reason.value}` e valor `{self.value}` se "
-                "contradizem"
+                f"`{self.id}`: `available` com `reason={self.reason.value}` — medido por "
+                "inteiro não tem motivo de ressalva"
+            )
+
+        if not tem_valor and self.reason is Reason.OK:
+            raise ValueError(
+                f"`{self.id}`: sem valor e com `reason=ok` — ausência precisa dizer por quê"
             )
 
         if self.data_coverage is not None and not (0.0 <= self.data_coverage <= 1.0):
