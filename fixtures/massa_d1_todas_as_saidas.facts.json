@@ -1,0 +1,233 @@
+{
+  "facts_schema_version": "analysis-facts-v1",
+  "measurement_contract_version": "measurement-1.0",
+  "identity": {
+    "analysis_id": "00000000-0000-4000-8000-0000000000d1",
+    "job_id": "job-massa-a",
+    "analysis_run_id": "run-massa-a"
+  },
+  "window": {
+    "analyzed_at": "2026-07-31T10:00:00Z",
+    "record_count": 100
+  },
+  "provenance": {
+    "engine_version": "sentinela-engine-e7d0703",
+    "analysis_version": "deep",
+    "dataset_fingerprint": "sha256:massa-a-sintetica"
+  },
+  "indicators": [
+    {
+      "id": "useful_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.8,
+      "unit": "ratio",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 100
+      }
+    },
+    {
+      "id": "outcome_coverage",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.85,
+      "unit": "ratio",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 100
+      }
+    },
+    {
+      "id": "conversion_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.25,
+      "unit": "ratio",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 100
+      }
+    },
+    {
+      "id": "intent_coverage_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.85,
+      "unit": "ratio",
+      "calculation_version": "1.0",
+      "source": "engine.business.unit_economics.compute_tenant_metrics",
+      "denominator": {
+        "kind": "intents",
+        "value": 20
+      }
+    },
+    {
+      "id": "observed_conversations",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 100,
+      "unit": "conversations",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "useful_outcomes",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 80,
+      "unit": "conversations",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "actual_handoffs",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 12,
+      "unit": "conversations",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "conversion_count",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 25,
+      "unit": "conversations",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics"
+    },
+    {
+      "id": "total_estimated_cost",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 10.0,
+      "unit": "currency",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "currency": "USD"
+    },
+    {
+      "id": "observed_token_cost_total",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 8.0,
+      "unit": "currency",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "currency": "USD"
+    },
+    {
+      "id": "observed_handoff_cost_total",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 2.0,
+      "unit": "currency",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "currency": "USD"
+    },
+    {
+      "id": "cost_per_useful_outcome",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.125,
+      "unit": "currency",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "currency": "USD",
+      "denominator": {
+        "kind": "useful_outcomes",
+        "value": 80
+      }
+    },
+    {
+      "id": "cost_per_session",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.1,
+      "unit": "currency",
+      "calculation_version": "1.0",
+      "source": "engine.business.unit_economics.compute_tenant_metrics",
+      "currency": "USD",
+      "denominator": {
+        "kind": "analyzed_conversations",
+        "value": 100
+      }
+    },
+    {
+      "id": "avg_variance_per_intent",
+      "kind": "scalar",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.0834,
+      "unit": null,
+      "calculation_version": "1.0",
+      "source": "engine.business.unit_economics.compute_tenant_metrics"
+    },
+    {
+      "id": "estimated_handoff_cost",
+      "kind": "currency",
+      "availability": "available",
+      "reason": "ok",
+      "value": 24.0,
+      "unit": "currency",
+      "calculation_version": "1.0",
+      "source": "engine.business.cost_estimators.estimate_useful_outcome_economics",
+      "currency": "USD"
+    },
+    {
+      "id": "intents_detected",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 20,
+      "unit": "intents",
+      "calculation_version": "1.0",
+      "source": "engine.business.unit_economics.compute_tenant_metrics"
+    },
+    {
+      "id": "covered_intents",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 17,
+      "unit": "intents",
+      "calculation_version": "1.0",
+      "source": "engine.business.unit_economics.compute_tenant_metrics"
+    },
+    {
+      "id": "critical_alerts",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 3,
+      "unit": "alerts",
+      "calculation_version": "1.0",
+      "source": "core.sentinela_engine.run_sentinela"
+    }
+  ],
+  "dimensions": [],
+  "recommendations": [],
+  "evidence": []
+}

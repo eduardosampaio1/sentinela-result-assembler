@@ -79,9 +79,35 @@ class TestSincronizacaoDeSchemas:
 class TestRegistro:
     def test_ordem_canonica_cobre_exatamente_o_registro(self):
         """Um indicador registrado fora da ordem canônica nunca seria publicado — e o
-        registro estaria mentindo sobre o que suporta."""
-        assert set(CANONICAL_ORDER) == set(INDICATOR_REGISTRY)
-        assert len(CANONICAL_ORDER) == len(set(CANONICAL_ORDER))
+        registro estaria mentindo sobre o que suporta.
+
+        ## Quem tem que cobrir o registro é a ordem MAIS NOVA
+
+        A ordem virou duas: `CANONICAL_ORDER_V1` é congelada nos catorze do v1, e
+        `CANONICAL_ORDER_V3` deriva dela acrescentando o que estreou no v3. Exigir cobertura
+        total da V1 tornaria o congelamento impossível — qualquer saída nova a obrigaria a
+        crescer, que é exatamente o defeito que a partição veio consertar.
+
+        A V3 é quem precisa cobrir tudo: um indicador registrado fora dela não é publicado
+        por versão nenhuma.
+        """
+        from result_assembler.registry.indicators import (
+            CANONICAL_ORDER_V1,
+            CANONICAL_ORDER_V3,
+        )
+
+        assert set(CANONICAL_ORDER_V3) == set(INDICATOR_REGISTRY), (
+            "há indicador no registro fora da ordem do v3: ele nunca seria publicado"
+        )
+        assert len(CANONICAL_ORDER_V3) == len(set(CANONICAL_ORDER_V3)), "id repetido na V3"
+        assert len(CANONICAL_ORDER_V1) == len(set(CANONICAL_ORDER_V1)), "id repetido na V1"
+
+        # A V1 é SUBCONJUNTO, e nesta ordem: derivar a V3 dela é o que garante que nenhum
+        # indicador antigo mude de posição quando o v3 crescer (ADR-004).
+        assert CANONICAL_ORDER_V3[: len(CANONICAL_ORDER_V1)] == CANONICAL_ORDER_V1
+
+        # E o apelido público continua significando o que significava: os catorze do v1.
+        assert CANONICAL_ORDER == CANONICAL_ORDER_V1
 
     def test_ids_publicos_sao_unicos(self):
         publicos = [d.public_id for d in INDICATOR_REGISTRY.values()]

@@ -54,7 +54,7 @@ from result_assembler.contracts.result_v2 import (
 )
 from result_assembler.errors import AssemblyError, AssemblyInvariantViolation
 from result_assembler.registry.indicators import (
-    INDICATOR_REGISTRY_VERSION,
+    INDICATOR_REGISTRY_VERSION_V1,
     definicao_de,
 )
 from result_assembler.serialization.canonical import (
@@ -212,7 +212,7 @@ def assemble_v2(facts: AnalysisFacts, analytics: AnalyticsComponent) -> Assembly
             facts_schema_version=FACTS_SCHEMA_VERSION,
             result_schema_version=RESULT_SCHEMA_V2_VERSION,
             measurement_contract_version=facts.measurement_contract_version,
-            indicator_registry_version=INDICATOR_REGISTRY_VERSION,
+            indicator_registry_version=INDICATOR_REGISTRY_VERSION_V1,
         ),
         job_id=facts.identity.job_id,
         analysis_run_id=facts.identity.analysis_run_id,

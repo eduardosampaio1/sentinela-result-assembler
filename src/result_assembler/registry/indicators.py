@@ -32,7 +32,16 @@ from types import MappingProxyType
 from result_assembler.contracts.facts import Availability, IndicatorKind
 
 #: Versão do registro. Muda quando um indicador entra, sai ou muda de semântica.
-INDICATOR_REGISTRY_VERSION = "indicator-registry-1.0"
+#: Uma string de versão, UM conjunto de saídas. O literal viaja no manifesto das três
+#: versões de resultado: se o v1 publicasse catorze e o v3 dezoito sob o mesmo valor, quem
+#: fixasse `1.0` resolveria conjuntos diferentes conforme a data — a propriedade que o lock
+#: do wheel protege com `(versão, sha256)`.
+INDICATOR_REGISTRY_VERSION_V1 = "indicator-registry-1.0"
+INDICATOR_REGISTRY_VERSION_V3 = "indicator-registry-1.1"
+
+#: Apelido de compatibilidade, pelo mesmo motivo de `CANONICAL_ORDER`: o valor exportado
+#: nasceu descrevendo os catorze.
+INDICATOR_REGISTRY_VERSION = INDICATOR_REGISTRY_VERSION_V1
 
 #: Versões de cálculo aceitas nesta release. Hoje há uma só; a exigência de que o
 #: produtor DECLARE a versão é o ponto — sem ela não há como recusar um número velho.
@@ -40,6 +49,9 @@ _V1 = frozenset({"1.0"})
 
 _ECONOMICS = "engine.business.cost_estimators.estimate_useful_outcome_economics"
 _TENANT = "engine.business.unit_economics.compute_tenant_metrics"
+#: Escalares que o motor grava no topo do retorno — nem estimador de custo, nem unit
+#: economics. Procedencia propria porque quem os produziu foi outra coisa.
+_MOTOR = "core.sentinela_engine.run_sentinela"
 
 #: Estados possíveis para um indicador que pode simplesmente não ter sido medido.
 _QUALQUER_ESTADO = frozenset(
@@ -208,6 +220,14 @@ _DEFINICOES: dict[str, IndicatorDefinition] = {
         _ECONOMICS,
         denom="useful_outcomes",
     ),
+    # ESTIMATIVA, nao observacao. O motor a rotula como cenario: "volume observado x
+    # premissa nao e custo observado". O nome oficial carrega o "Estimated" que a regra
+    # 25 exige, e e o nome que separa esta das tres observadas.
+    "estimated_handoff_cost": _moeda(
+        "estimated_handoff_cost",
+        "Custo de handoff ESTIMADO a partir do risco de contencao e de premissas de negocio configuradas. Cenario, nao observacao.",
+        _ECONOMICS,
+    ),
     "cost_per_session": _moeda(
         "cost_per_session",
         "Custo total dividido pelas conversas analisadas.",
@@ -217,6 +237,30 @@ _DEFINICOES: dict[str, IndicatorDefinition] = {
     # ── escalar ──────────────────────────────────────────────────────────────────
     # É VARIÂNCIA. Não é consistência, não é estabilidade, não é confiança e não é drift
     # — o nome público diz o que é para que ninguém precise adivinhar.
+    # ── contagens de intencao e de alerta ────────────────────────────────────────
+    # Atravessavam SO como numerador e denominador de `intent_coverage_rate`. O catalogo
+    # as lista como saidas proprias (#31 e #32), e sem elas a taxa nao tem como ser
+    # auditada: quem le 0,85 nao sabe se e 17 de 20 ou 850 de 1000.
+    "intents_detected": _contagem(
+        "intents_detected_count",
+        "Quantidade de intencoes distintas formadas na analise.",
+        _TENANT,
+        unit="intents",
+    ),
+    "covered_intents": _contagem(
+        "covered_intents_count",
+        "Quantidade de intencoes com amostra suficiente para analise, conforme o piso de amostra do metodo.",
+        _TENANT,
+        unit="intents",
+    ),
+    # A CONTAGEM e metrica; o conteudo dos alertas e familia analitica e sai por outro
+    # caminho. O catalogo separa as duas de proposito.
+    "critical_alerts": _contagem(
+        "critical_alert_count",
+        "Quantidade de alertas de severidade critica encontrados na analise.",
+        _MOTOR,
+        unit="alerts",
+    ),
     "avg_variance_per_intent": IndicatorDefinition(
         public_id="mean_response_variance_per_intent",
         description="Média da variância de resposta entre intenções. Variância — valor "
@@ -236,8 +280,19 @@ _DEFINICOES: dict[str, IndicatorDefinition] = {
 INDICATOR_REGISTRY: Mapping[str, IndicatorDefinition] = MappingProxyType(_DEFINICOES)
 
 #: Ordem canônica de publicação. Determinismo vem DAQUI, não da ordem em que os fatos
-#: chegaram: dois produtores com a mesma medição precisam gerar os mesmos bytes.
-CANONICAL_ORDER: tuple[str, ...] = (
+#: chegaram: dois produtores com a mesma medição precisam gerar os mesmos bytes (ADR-004).
+#:
+#: ## Por que são DUAS, e por que a segunda deriva da primeira
+#:
+#: Era UMA lista, lida pelos três montadores. Quando o registro ganhou saídas para o v3,
+#: elas passaram a sair também no v1 — que o repositório declara imutável — e a suíte de
+#: compatibilidade seguiu verde, porque os goldens dela só cobrem massas que não contêm os
+#: ids novos. Um gate que provava que o v1 não muda SOBRE MASSA QUE NÃO EXERCITA A MUDANÇA.
+#:
+#: A V3 DERIVA da V1 em vez de repeti-la: os catorze existem uma vez só, e nenhum indicador
+#: antigo muda de posição — o golden do v3 cresce apenas no fim. Para o v1 crescer, alguém
+#: precisa editar a tupla que diz no nome que não cresce. Não é impossível: é VISÍVEL.
+CANONICAL_ORDER_V1: tuple[str, ...] = (
     "useful_rate",
     "outcome_coverage",
     "conversion_rate",
@@ -253,6 +308,20 @@ CANONICAL_ORDER: tuple[str, ...] = (
     "cost_per_session",
     "avg_variance_per_intent",
 )
+
+#: O v3 é a V1 mais o que estreou nele. Acrescentar aqui é a ÚNICA forma de uma saída nova
+#: chegar ao público sem tocar em versão congelada.
+CANONICAL_ORDER_V3: tuple[str, ...] = CANONICAL_ORDER_V1 + (
+    "estimated_handoff_cost",
+    "intents_detected",
+    "covered_intents",
+    "critical_alerts",
+)
+
+#: Compatibilidade: `CANONICAL_ORDER` é API pública do pacote (`__all__`). Quando ele foi
+#: exportado a lista tinha os catorze do v1, e é esse o significado que o apelido preserva.
+#: Apontá-lo para a V3 faria um consumidor externo ler dezoito e concluir que o v1 cresceu.
+CANONICAL_ORDER: tuple[str, ...] = CANONICAL_ORDER_V1
 
 #: Dimensões analíticas publicáveis. São as QUATRO do composto de saúde (F2.5) lidas em
 #: `core/_engine_helpers.py` — `_DIMENSOES_AI_HEALTH`. Fail-closed pelo mesmo motivo dos

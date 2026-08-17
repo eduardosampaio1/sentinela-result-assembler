@@ -33,8 +33,8 @@ from result_assembler.contracts.result import (
 from result_assembler.contracts.result_v2 import PublicResultV2
 from result_assembler.errors import UnknownIndicator
 from result_assembler.registry.indicators import (
-    CANONICAL_ORDER,
-    INDICATOR_REGISTRY_VERSION,
+    CANONICAL_ORDER_V1,
+    INDICATOR_REGISTRY_VERSION_V1,
     definicao_de,
 )
 from result_assembler.serialization.canonical import (
@@ -135,7 +135,9 @@ def _ordem_canonica(facts: AnalysisFacts) -> tuple[FactIndicator, ...]:
     viesse do payload, o checksum viraria função de quem montou o dict.
     """
     por_id = {ind.id: ind for ind in facts.indicators}
-    return tuple(por_id[i] for i in CANONICAL_ORDER if i in por_id)
+    # A ordem CONGELADA do v1. Saida acrescentada ao registro para o v3 nao chega
+    # aqui, e e por isso que a lista e outra e nao a mesma filtrada.
+    return tuple(por_id[i] for i in CANONICAL_ORDER_V1 if i in por_id)
 
 
 def _partialidade(indicadores: tuple[PublicIndicator, ...]) -> Partiality:
@@ -199,7 +201,7 @@ def assemble(facts: AnalysisFacts) -> AssemblyOutcome:
             facts_schema_version=FACTS_SCHEMA_VERSION,
             result_schema_version=RESULT_SCHEMA_VERSION,
             measurement_contract_version=facts.measurement_contract_version,
-            indicator_registry_version=INDICATOR_REGISTRY_VERSION,
+            indicator_registry_version=INDICATOR_REGISTRY_VERSION_V1,
         ),
         job_id=facts.identity.job_id,
         analysis_run_id=facts.identity.analysis_run_id,

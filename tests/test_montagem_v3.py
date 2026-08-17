@@ -157,6 +157,122 @@ def test_a_escala_segue_o_kind_do_registro(principal) -> None:
     assert por_id["total_estimated_cost"].scale.kind is ScaleKind.CURRENCY
 
 
+#: A escala esperada de CADA saída do registro, escrita à mão.
+#:
+#: ## Por que uma tabela e não `_ESCALA_POR_KIND[definicao.kind]`
+#:
+#: Derivar a expectativa do mapa que o código usa faria o teste concordar consigo mesmo:
+#: trocar `count` por `raw` no registro passaria, porque os dois lados mudariam juntos. Aqui
+#: a expectativa é declaração independente, e é isso que a torna capaz de discordar.
+#:
+#: ## Por que exaustiva
+#:
+#: A escala é o que responde "esse número é bom ou ruim?". Um indicador novo entrando sem
+#: escala aferida é o defeito que este programa já pagou caro — e o teste irmão abaixo
+#: reprova se o registro crescer e esta tabela não.
+_ESCALA_ESPERADA: dict[str, ScaleKind] = {
+    # razões — faixa fechada 0..1 pelo próprio kind
+    "useful_outcome_rate": ScaleKind.RATIO_UNIT,
+    "outcome_field_coverage_rate": ScaleKind.RATIO_UNIT,
+    "conversion_rate": ScaleKind.RATIO_UNIT,
+    "intent_coverage_rate": ScaleKind.RATIO_UNIT,
+    # contagens — sem teto, e não precisam de um
+    "analyzed_conversation_count": ScaleKind.COUNT,
+    "useful_outcome_count": ScaleKind.COUNT,
+    "handoff_count": ScaleKind.COUNT,
+    "conversion_count": ScaleKind.COUNT,
+    "intents_detected_count": ScaleKind.COUNT,
+    "covered_intents_count": ScaleKind.COUNT,
+    "critical_alert_count": ScaleKind.COUNT,
+    # moeda — faixa aberta; o que ela precisa é da MOEDA, não de um máximo
+    "total_estimated_cost": ScaleKind.CURRENCY,
+    "token_cost_total": ScaleKind.CURRENCY,
+    "handoff_cost_total": ScaleKind.CURRENCY,
+    "cost_per_useful_outcome": ScaleKind.CURRENCY,
+    "cost_per_session": ScaleKind.CURRENCY,
+    "estimated_handoff_cost": ScaleKind.CURRENCY,
+    # escalar — a ÚNICA sem faixa contratada, e a única em que maior é pior
+    "mean_response_variance_per_intent": ScaleKind.RAW,
+}
+
+
+def test_a_tabela_de_escala_cobre_o_registro_INTEIRO() -> None:
+    """O cadeado que impede indicador novo entrar sem escala aferida.
+
+    Sem isto, a tabela acima envelheceria em silêncio: alguém acrescenta uma saída ao
+    registro, a montagem publica alguma escala, e ninguém compara com o que era esperado.
+    """
+    from result_assembler.registry.indicators import INDICATOR_REGISTRY
+
+    publicos = {d.public_id for d in INDICATOR_REGISTRY.values()}
+    faltando = publicos - set(_ESCALA_ESPERADA)
+    sobrando = set(_ESCALA_ESPERADA) - publicos
+    assert not faltando, f"saídas sem escala esperada declarada: {sorted(faltando)}"
+    assert not sobrando, f"escala esperada para saída que não existe mais: {sorted(sobrando)}"
+
+
+def test_toda_escala_publicada_e_a_ESPERADA() -> None:
+    """Atravessa até o resultado público e compara escala a escala, nas DEZOITO.
+
+    ## Por que uma massa própria
+
+    A `massa_a_principal` exercita 11 das 18, e tem golden ancorado nela — acrescentar saídas
+    ali reescreveria o golden por tabela, o que não pode ser efeito colateral de um teste de
+    escala. A `massa_d1_todas_as_saidas` existe para cobrir a ordem canônica inteira.
+
+    ## Estado ausente não isenta
+
+    `unavailable` continua publicando escala: a faixa é propriedade da MEDIDA, não do fato de
+    ela ter sido medida. Quem lê precisa saber em que régua o número teria caído.
+    """
+    resultado = assemble_v3(massa("massa_d1_todas_as_saidas.facts.json")).public_result
+
+    divergentes = {
+        ind.id: (ind.scale.kind, _ESCALA_ESPERADA[ind.id])
+        for ind in resultado.indicators
+        if ind.id in _ESCALA_ESPERADA and ind.scale.kind is not _ESCALA_ESPERADA[ind.id]
+    }
+    assert not divergentes, f"escala publicada != esperada: {divergentes}"
+
+    # Piso de cobertura: sem ele, o laço acima fica verde sobre massa vazia. Foi este piso
+    # que denunciou a primeira versão deste teste, que aferia 11 e parecia exaustiva.
+    aferidos = {ind.id for ind in resultado.indicators} & set(_ESCALA_ESPERADA)
+    assert aferidos == set(_ESCALA_ESPERADA), (
+        f"saídas sem escala aferida: {sorted(set(_ESCALA_ESPERADA) - aferidos)}"
+    )
+
+
+def test_as_quatro_saidas_da_D1_chegam_com_escala_e_unidade() -> None:
+    """As quatro que a D1 destravou, aferidas por nome no resultado PÚBLICO.
+
+    O teste irmão prova a escala das dezoito em bloco; este prova que as quatro novas existem
+    de fato no documento, com id público, escala e unidade — porque um teste que só compara
+    conjuntos passaria se as quatro fossem descartadas junto com a tabela de expectativa.
+    """
+    resultado = assemble_v3(massa("massa_d1_todas_as_saidas.facts.json")).public_result
+    por_id = {i.id: i for i in resultado.indicators}
+
+    esperado = {
+        "estimated_handoff_cost": (ScaleKind.CURRENCY, "currency"),
+        "intents_detected_count": (ScaleKind.COUNT, "intents"),
+        "covered_intents_count": (ScaleKind.COUNT, "intents"),
+        "critical_alert_count": (ScaleKind.COUNT, "alerts"),
+    }
+    for ident, (escala, unidade) in esperado.items():
+        assert ident in por_id, f"{ident} não chegou ao resultado público"
+        ind = por_id[ident]
+        assert ind.scale.kind is escala, f"{ident}: escala {ind.scale.kind} != {escala}"
+        assert ind.unit == unidade, f"{ident}: unidade {ind.unit!r} != {unidade!r}"
+
+    # Contagem NÃO contrata denominador — decisão do registro, e a razão irmã
+    # (`intent_coverage_rate`) já publica `covered/total` com a base declarada. Duas fontes
+    # para a mesma relação é a regra 14.
+    for ident in ("intents_detected_count", "covered_intents_count", "critical_alert_count"):
+        assert por_id[ident].denominator is None, (
+            f"{ident} veio com denominador: a relação já é publicada pela razão irmã"
+        )
+
+
 def test_kind_sem_escala_declarada_PARA_a_montagem() -> None:
     # Publicar `raw` por omissão faria o montador escolher o que o contrato afirma sobre a
     # faixa de um número — decisão que ele não toma.

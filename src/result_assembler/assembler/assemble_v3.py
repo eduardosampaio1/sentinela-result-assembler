@@ -55,8 +55,8 @@ from result_assembler.contracts.result_v3 import (
 from result_assembler.errors import UnknownIndicator
 from result_assembler.registry.argos_catalog import ARGOS_CATALOG_VERSION, POR_ID, Familia
 from result_assembler.registry.indicators import (
-    INDICATOR_REGISTRY_VERSION,
-    CANONICAL_ORDER,
+    INDICATOR_REGISTRY_VERSION_V3,
+    CANONICAL_ORDER_V3,
     definicao_de,
 )
 
@@ -175,7 +175,9 @@ def _publicar_dimensao(dim: FactDimension) -> PublicMeasurement:
 def _ordem_canonica(facts: AnalysisFacts) -> tuple[FactIndicator, ...]:
     """Ordem CONTRATADA, não a de chegada — senão o checksum vira função de quem montou."""
     por_id = {ind.id: ind for ind in facts.indicators}
-    return tuple(por_id[i] for i in CANONICAL_ORDER if i in por_id)
+    # A ordem do v3 DERIVA da do v1: os catorze primeiro, na mesma sequencia, e o
+    # que estreou no v3 depois. Indicador antigo nunca muda de posicao.
+    return tuple(por_id[i] for i in CANONICAL_ORDER_V3 if i in por_id)
 
 
 def _partialidade(indicadores: tuple[PublicIndicatorV3, ...]) -> Partiality:
@@ -260,7 +262,7 @@ def assemble_v3(facts: AnalysisFacts) -> AssemblyV3Outcome:
     publico = PublicResultV3(
         analysis_id=facts.identity.analysis_id,
         result_schema_version=RESULT_V3_SCHEMA_VERSION,
-        indicator_registry_version=INDICATOR_REGISTRY_VERSION,
+        indicator_registry_version=INDICATOR_REGISTRY_VERSION_V3,
         measurement_contract_version=facts.measurement_contract_version,
         argos_catalog_version=ARGOS_CATALOG_VERSION,
         summary=PublicSummary(
