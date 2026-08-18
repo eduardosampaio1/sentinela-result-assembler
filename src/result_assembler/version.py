@@ -17,6 +17,19 @@ from __future__ import annotations
 
 #: Versão desta implementação. Muda quando a MONTAGEM muda, mesmo sem mudar contrato.
 #:
+#: **0.6.0** — a D5. `PublicMeasurement` e `FactMedida` ganharam `confidence`, e o
+#: `behavior_score` (a #1 do catalogo, a ULTIMA das 37 saidas sem produtor) ganhou escala.
+#:
+#: O escore legado fundia qualidade e amostra num numero so: com comportamento PERFEITO ele
+#: reportava apenas `n/10` — 30 com tres conversas, 100 com dez —, e noutra massa o
+#: comportamento PIOR pontuou MAIS ALTO por ter amostra maior. `confidence` e agora dimensao
+#: propria e NUNCA altera `value`.
+#:
+#: Junto: a tabela de escalas da spec passou a ser DERIVADA do registro
+#: (`scripts/gerar_tabela_de_escalas.py --check`). Ela declarava `ratio_unit` para dois escores
+#: que o produtor mede em 0..100, a D4 divergiu dela e ninguem viu — porque era prosa que
+#: nenhum gate comparava. Agora o codigo e canonico e o documento e derivado.
+#:
 #: **0.5.0** — a D4. O `PublicIntent` e o `FactIntent` ganharam `semantic_drift`: a
 #: dispersao das respostas DENTRO da intencao — "a IA da respostas muito diferentes para
 #: perguntas parecidas". O motor ja a calculava por intencao (`mean_answer_similarity`) e a
@@ -55,7 +68,7 @@ from __future__ import annotations
 #: muda o manifesto — e é exatamente o que deve acontecer: o manifesto responde "quem
 #: montou", e quem monta mudou. Mantê-lo em 0.1.0 faria dois assemblers diferentes
 #: assinarem com o mesmo nome, que é o oposto de procedência.
-ASSEMBLER_VERSION = "0.5.0"
+ASSEMBLER_VERSION = "0.6.0"
 
 #: Contrato de ENTRADA (interno, vindo do domínio analítico).
 FACTS_SCHEMA_VERSION = "analysis-facts-v1"

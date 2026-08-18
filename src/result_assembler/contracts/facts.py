@@ -358,6 +358,9 @@ class FactMedida(FactsModel):
     #: `None` sempre que não houver medição. NUNCA 0 para representar ausência.
     value: float | None = None
     data_coverage: float | None = Field(default=None, ge=0.0, le=1.0)
+    #: Confianca DESTA medicao. Distinta de `global_confidence`, que e uma saida da analise.
+    #: Nunca altera `value` — sao dimensoes diferentes do mesmo fato.
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
 
     #: Versão do CÁLCULO que produziu este valor — não a do contrato nem a do assembler.
     calculation_version: str = Field(min_length=1)

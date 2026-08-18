@@ -171,17 +171,47 @@ MethodMetadata
 
 `summary` **não** carrega texto: o resumo executivo tem bloco próprio, com idioma.
 
-### 4.3 `scores[]` — 7 entradas
+<!-- GERADO: tabela de escalas — não editar à mão -->
+
+> Derivada de `_ESCALA_POR_SAIDA` e do catálogo ARGOS por
+> `scripts/gerar_tabela_de_escalas.py`. O **código é canônico**: a escala é decisão do
+> PRODUTOR, e uma tabela escrita à mão já divergiu dele uma vez sem ninguém ver.
+
+### `scores[]` — 7 entradas
 
 | public_id | escala | nota |
 |---|---|---|
-| `behavior_score` | ratio_unit | `method_version` obrigatório |
-| `ai_health_score` | ratio_unit | `composite_of` das 4 dimensões |
-| `consistency_score` | ratio_unit | destravado pelo envelope |
-| `global_confidence` | ratio_unit | confiança sobre a análise |
-| `cross_intent_similarity` | ratio_unit | |
-| `response_stability` | **score_100** | escala do produtor, preservada |
-| `semantic_drift` | ratio_unit | + janela metodológica |
+| `behavior_score` | `score_100` | escore global; exige method_version para ser comparável |
+| `ai_health_score` | `ratio_unit` | composto das 4 dimensões — NÃO é a quinta dimensão |
+| `consistency_score` | `score_100` | excluído no v1 por absence-as-zero; o envelope Measurement resolve |
+| `global_confidence` | `ratio_unit` | confiança sobre a análise, não sobre o negócio |
+| `cross_intent_similarity` | `ratio_unit` |  |
+| `response_stability` | `score_100` | escala 0..100 do produtor, publicada como tal (D5 do owner); converter no bridge seria normalização não autorizada |
+| `semantic_drift` | `ratio_unit` | medido DENTRO de uma análise; não é delta A×B da EVO-02 |
+
+### `risks[]`
+
+| public_id | escala | nota |
+|---|---|---|
+| `containment_risk` | `ratio_unit` |  |
+| `conversion_risk` | `ratio_unit` |  |
+
+### `projections[]`
+
+| public_id | escala | nota |
+|---|---|---|
+| `projected_token_cost@month` | **sem escala declarada** | horizonte é DADO; o `@` só desambigua a identidade no catálogo |
+| `projected_token_cost@year` | **sem escala declarada** |  |
+| `projected_handoff_cost@month` | **sem escala declarada** |  |
+| `projected_handoff_cost@year` | **sem escala declarada** |  |
+
+### `intents[]`
+
+| public_id | escala | nota |
+|---|---|---|
+| `intent_score` | `score_100` | por intenção, com suporte amostral e severidade; achatar em indicators[] perderia a identidade da intenção |
+
+<!-- FIM DO GERADO -->
 
 `ai_health_score` declara `composite_of: ["semantic","behavioral","structural","economic"]`.
 **Não é a quinta dimensão** — colocá-lo em `dimensions[]` faria qualquer agregação somar o

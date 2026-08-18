@@ -275,6 +275,10 @@ _ESCALA_POR_SAIDA: dict[str, Scale] = {
     # `governance_score` (que e o `consistency_score` agregado) nao passa de 100 por
     # construcao — a config normaliza `W_LEN + W_SIM = 1` e os dois componentes sao
     # limitados a 100. `confidence` e `min(1.0, n/full_at_n)`.
+    # D5 — a metrica-mae. `max(0, raw_governance_score - cross_intent_penalty)` vive em
+    # 0..100, como o `consistency_score`. A spec dizia `ratio_unit`, palpite feito quando ela
+    # nao tinha produtor: publicar 47.25 sob `ratio_unit` faria o invariante de faixa LEVANTAR.
+    "behavior_score": Scale(kind=ScaleKind.SCORE_100),
     "consistency_score": Scale(kind=ScaleKind.SCORE_100),
     "global_confidence": Scale(kind=ScaleKind.RATIO_UNIT),
     "cross_intent_similarity": Scale(kind=ScaleKind.RATIO_UNIT),
@@ -305,6 +309,8 @@ def _publicar_medida(m: FactMedida) -> PublicMeasurement:
         reason=m.reason,
         data_coverage=m.data_coverage,
         scale=_escala_da_saida(m.id),
+        # D5 — dimensao PROPRIA, nunca dentro do valor.
+        confidence=m.confidence,
         method_version=m.calculation_version,
         domain=_dominio_de(m.id),
     )

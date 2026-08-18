@@ -157,6 +157,20 @@ class PublicMeasurement(ResultV3Model):
     #: comparar duas análises longitudinalmente compara coisas diferentes com o mesmo rótulo.
     method_version: str | None = None
     domain: Domain | None = None
+    #: Confianca DESTA medicao, quando o produtor a declara.
+    #:
+    #: **Nao confundir com `global_confidence`**, que e uma SAIDA da analise (#4 do catalogo,
+    #: um escore proprio sobre a analise inteira). Este campo e a confianca da medicao
+    #: individual — quanta evidencia sustenta ESTE numero.
+    #:
+    #: Existe porque o `behavior_score` precisava dela SEPARADA do valor. O escore legado
+    #: fazia `qualidade x confianca` num so numero, e medido: com comportamento perfeito o
+    #: resultado reportava apenas `n/10` (30 com tres conversas, 100 com dez). O consumidor
+    #: lia falta de evidencia como baixa qualidade, e a ordenacao chegava a INVERTER.
+    #:
+    #: `confidence` NUNCA altera `value`. Sao dimensoes distintas da mesma medicao, e fundi-las
+    #: e o padrao que o contrato de medicao ja nomeia: "usar uma para mascarar a outra".
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     #: Unidade textual quando a escala não a determina (`duration`, `currency`).
     unit: str | None = None
 

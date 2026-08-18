@@ -541,6 +541,20 @@
           "title": "Calculation Version",
           "type": "string"
         },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
         "data_coverage": {
           "anyOf": [
             {
@@ -635,6 +649,20 @@
           "minLength": 1,
           "title": "Calculation Version",
           "type": "string"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
         },
         "currency": {
           "anyOf": [
@@ -782,6 +810,20 @@
           "title": "Calculation Version",
           "type": "string"
         },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
         "data_coverage": {
           "anyOf": [
             {
@@ -851,6 +893,20 @@
           },
           "title": "Composite Of",
           "type": "array"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
         },
         "data_coverage": {
           "anyOf": [

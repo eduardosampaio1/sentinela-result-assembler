@@ -388,3 +388,78 @@ def test_TODA_classe_do_contrato_de_entrada_e_exportada() -> None:
 
     faltando = sorted(do_contrato - set(ra.__all__))
     assert not faltando, f"classes do contrato fora do `__all__`: {faltando}"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# 7. D5 — a confianca como DIMENSAO, e a escala com fonte unica
+# ═══════════════════════════════════════════════════════════════════════════════════════
+
+
+def test_confidence_atravessa_e_NAO_altera_o_valor() -> None:
+    """A separacao que a D5 existe para preservar.
+
+    O escore legado fazia `qualidade x confianca` num so numero: com comportamento PERFEITO ele
+    reportava apenas `n/10` — 30 com tres conversas, 100 com dez. O consumidor lia falta de
+    evidencia como baixa qualidade, e a ordenacao chegava a INVERTER entre um robo bom e um ruim.
+
+    Aqui as duas viajam no MESMO objeto, em campos diferentes, e o valor nao sente a confianca.
+    """
+    doc = _documento_v3()
+    doc["scores"][0]["confidence"] = 0.3
+    publicado = _publicado(doc)["scores"][0]["measurement"]
+
+    assert publicado["confidence"] == 0.3
+    assert publicado["value"] == 0.7621, "a confianca mexeu no valor"
+
+
+def test_a_mesma_medicao_com_confiancas_DIFERENTES_tem_o_mesmo_valor() -> None:
+    """Cadeado direto contra a fusao. Se alguem voltar a multiplicar, isto morre."""
+    valores = []
+    for conf in (0.1, 0.5, 1.0):
+        doc = _documento_v3()
+        doc["scores"][0]["confidence"] = conf
+        valores.append(_publicado(doc)["scores"][0]["measurement"]["value"])
+    assert len(set(valores)) == 1, f"o valor mudou com a confianca: {valores}"
+
+
+def test_confidence_fora_de_0_1_e_RECUSADA() -> None:
+    doc = _documento_v3()
+    doc["scores"][0]["confidence"] = 1.4
+    with pytest.raises((SchemaMismatch, ValueError)):
+        parse_facts(doc)
+
+
+def test_confidence_ausente_continua_ausente() -> None:
+    """Nao inventa `1.0` para quem nao declarou. Ausencia de confianca nao e confianca total."""
+    assert _publicado(_documento_v3())["scores"][0]["measurement"]["confidence"] is None
+
+
+def test_a_TABELA_da_spec_deriva_do_registro_e_esta_em_dia() -> None:
+    """A spec declarava `ratio_unit` para dois escores que o produtor mede em 0..100.
+
+    A divergencia entrou na D4 e NINGUEM viu, porque a tabela era prosa escrita a mao e nenhum
+    gate a comparava. Agora ela e DERIVADA do registro, e este teste e o que impede a segunda
+    fonte de verdade de voltar.
+    """
+    import subprocess
+    import sys as _sys
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parent.parent
+    proc = subprocess.run(
+        [_sys.executable, str(raiz / "scripts" / "gerar_tabela_de_escalas.py"), "--check"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 0, proc.stderr or proc.stdout
+
+
+def test_o_heroi_tem_escala_declarada() -> None:
+    """`behavior_score` sem escala faria a montagem levantar `EscalaNaoDeclarada` — e a #1 do
+    catalogo e justamente a que o Front procura para montar o heroi."""
+    from result_assembler.assembler.assemble_v3 import _ESCALA_POR_SAIDA
+
+    escala = _ESCALA_POR_SAIDA.get("behavior_score")
+    assert escala is not None, "a metrica-mae ficou sem escala"
+    # 0..100 porque `raw_governance_score - penalidade` vive nessa faixa. `ratio_unit` faria o
+    # invariante de faixa recusar 47.25.
+    assert escala.kind.value == "score_100"
