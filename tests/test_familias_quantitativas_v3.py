@@ -357,3 +357,34 @@ def test_assemble_v3_recusa_indicador_fora_do_REGISTRO() -> None:
     fatos = AnalysisFactsV3.model_validate(doc)
     with pytest.raises(AssemblyError):
         assemble_v3(fatos)
+
+
+def test_TODA_classe_do_contrato_de_entrada_e_exportada() -> None:
+    """Cadeado contra uma omissao que ja aconteceu e ninguem viu por uma fatia inteira.
+
+    O `__all__` exportava as classes de fato do v1 (`FactIndicator`, `FactDimension`, ...) e
+    NAO as do v2 (`FactAlert`, `FactIssue`, `FactExecutiveSummary`, `AnalysisFactsV2`). Elas
+    continuavam importaveis, entao nada quebrava — o que quebrava era a DECLARACAO: a
+    superficie publica do pacote nao dizia o que o release tinha introduzido.
+
+    As minhas repetiriam a omissao. Este teste faz o proximo bump reprovar em vez de repetir.
+    """
+    import result_assembler as ra
+    from result_assembler.contracts import facts as modulo
+
+    # `FactsModel` e a BASE estrita (`extra="forbid"`, `frozen`), nao uma familia do
+    # documento. Consumidor nenhum a constroi; exporta-la sugeriria que ela e um envelope.
+    INTERNAS = {"FactsModel"}
+
+    do_contrato = {
+        nome
+        for nome in dir(modulo)
+        if nome not in INTERNAS
+        and (nome.startswith("Fact") or nome.startswith("AnalysisFacts"))
+        and isinstance(getattr(modulo, nome), type)
+        and getattr(modulo, nome).__module__ == modulo.__name__
+    }
+    assert do_contrato, "a varredura nao achou classe nenhuma — o teste perdeu a ancora"
+
+    faltando = sorted(do_contrato - set(ra.__all__))
+    assert not faltando, f"classes do contrato fora do `__all__`: {faltando}"
