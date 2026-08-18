@@ -53,7 +53,7 @@ def _documento_v3(**familias) -> dict:
     doc["scores"] = [
         {
             "id": "ai_health_score",
-            "value": 76.48,
+            "value": 0.7621,
             "availability": "available",
             "reason": "ok",
             "composite_of": ["semantic", "behavioral", "structural", "economic"],
@@ -128,7 +128,7 @@ def test_documento_v3_nao_vira_objeto_v1_calado() -> None:
 
     publicado = assemble_v3(fatos).public_result.model_dump(mode="json")
     assert publicado["scores"] is not None, "documento trazia scores e o resultado diz null"
-    assert publicado["scores"][0]["measurement"]["value"] == 76.48
+    assert publicado["scores"][0]["measurement"]["value"] == 0.7621
 
 
 def test_versao_de_entrada_desconhecida_e_recusada_na_porta() -> None:
@@ -176,9 +176,15 @@ def test_as_duas_visoes_descrevem_a_mesma_analise() -> None:
 # ═══════════════════════════════════════════════════════════════════════════════════════
 
 
-def test_todo_escore_publicado_declara_score_100() -> None:
+def test_o_escore_de_saude_declara_a_escala_DO_PRODUTOR() -> None:
+    """`measurements.ai_health` vive em 0..1 — medido no motor, nao inferido do nome.
+
+    O legado `business_impact.ai_health_score` e o MESMO numero vezes 100. Declarar
+    `score_100` aqui faria 0.76 ser lido como saude pessima; multiplicar por 100 seria a
+    normalizacao nao autorizada que o `ScaleKind` proibe em docstring.
+    """
     for s in _publicado(_documento_v3())["scores"]:
-        assert s["measurement"]["scale"]["kind"] == "score_100"
+        assert s["measurement"]["scale"]["kind"] == "ratio_unit"
 
 
 def test_a_escala_do_escore_e_afirmada_SOZINHA_pelo_teste() -> None:
@@ -193,7 +199,7 @@ def test_a_escala_do_escore_e_afirmada_SOZINHA_pelo_teste() -> None:
     """
     doc = _documento_v3()
     doc["scores"][0]["value"] = 0.5  # valido em ratio_unit E em score_100
-    assert _publicado(doc)["scores"][0]["measurement"]["scale"]["kind"] == "score_100"
+    assert _publicado(doc)["scores"][0]["measurement"]["scale"]["kind"] == "ratio_unit"
 
 
 def test_todo_risco_publicado_declara_ratio_unit() -> None:

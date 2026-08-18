@@ -248,11 +248,17 @@ def _publicar_familias_analiticas(facts: AnalysisFacts) -> dict[str, object]:
 #: os sete escores do catálogo não vivem todos na mesma faixa. Então é por id, e a busca
 #: falha FECHADA — id sem escala declarada levanta em vez de publicar medição sem faixa.
 _ESCALA_POR_SAIDA: dict[str, Scale] = {
-    # 0..100 do produtor, publicado como tal. Converter para 0..1 na fronteira seria
-    # normalização não autorizada: quem recebe 0..1 onde o motor mediu 0..100 não tem como
-    # saber que a conversão aconteceu.
-    "ai_health_score": Scale(kind=ScaleKind.SCORE_100),
+    # A escala e a DO PRODUTOR, medida no retorno do motor — nao a que o nome sugere.
+    # `measurements.ai_health` vive em 0..1 (medido: 0.7621), e o legado
+    # `business_impact.ai_health_score` e o MESMO numero vezes 100. Publicar o composto
+    # honesto sob `score_100` faria 0.76 ser lido como saude pessima; multiplica-lo por 100
+    # seria normalizacao nao autorizada, que e o que a docstring do `ScaleKind` proibe.
+    "ai_health_score": Scale(kind=ScaleKind.RATIO_UNIT),
+    # `intent_score` fica declarado porque o catalogo o declara (#15) — e hoje chega
+    # `unavailable`: o motor produz variancia, estabilidade, suporte e severidade por
+    # intencao, nao um escore composto dela. A escala existe para quando existir produtor.
     "intent_score": Scale(kind=ScaleKind.SCORE_100),
+    # 0..100 do produtor (`response_stability_score`), publicado como tal.
     "response_stability": Scale(kind=ScaleKind.SCORE_100),
     # Probabilidades. A `band` é do produtor; a faixa numérica é do contrato.
     "containment_risk": Scale(kind=ScaleKind.RATIO_UNIT),
