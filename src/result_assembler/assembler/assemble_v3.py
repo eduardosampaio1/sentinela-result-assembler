@@ -27,9 +27,11 @@ from dataclasses import dataclass
 from result_assembler.contracts.facts import (
     AnalysisFacts,
     AnalysisFactsV2,
+    AnalysisFactsV3,
     Availability,
     FactDimension,
     FactIndicator,
+    FactMedida,
 )
 from result_assembler.contracts.result import (
     IndicatorState,
@@ -47,12 +49,17 @@ from result_assembler.contracts.result_v3 import (
     PublicIssue,
     MethodMetadata,
     PublicIndicatorV3,
+    PublicIntent,
     PublicMeasurement,
+    PublicProjection,
     PublicResultV3,
+    PublicRisk,
+    PublicScore,
     Scale,
     ScaleKind,
 )
 from result_assembler.errors import UnknownIndicator
+from result_assembler.validation.invariants import validate_facts
 from result_assembler.registry.argos_catalog import ARGOS_CATALOG_VERSION, POR_ID, Familia
 from result_assembler.registry.indicators import (
     INDICATOR_REGISTRY_VERSION_V3,
@@ -127,7 +134,7 @@ def _dominio_de(public_id: str) -> Domain | None:
 
 def _publicar_indicador(ind: FactIndicator) -> PublicIndicatorV3:
     defin = definicao_de(ind.id)
-    if defin is None:  # pragma: no cover - `validate_facts` já recusou antes
+    if defin is None:  # pragma: no cover - `validate_facts` recusa antes de chegar aqui
         raise UnknownIndicator("indicador não registrado")
 
     estado = _ESTADO_PUBLICO[ind.availability]
@@ -234,6 +241,137 @@ def _publicar_familias_analiticas(facts: AnalysisFacts) -> dict[str, object]:
     return saida
 
 
+#: A escala das saídas que NÃO são indicador, declarada por id público.
+#:
+#: Os indicadores tiram a escala do `kind` da definição no registro; as famílias
+#: quantitativas não têm `kind`, e deixá-las herdar uma escala por família estaria errado:
+#: os sete escores do catálogo não vivem todos na mesma faixa. Então é por id, e a busca
+#: falha FECHADA — id sem escala declarada levanta em vez de publicar medição sem faixa.
+_ESCALA_POR_SAIDA: dict[str, Scale] = {
+    # 0..100 do produtor, publicado como tal. Converter para 0..1 na fronteira seria
+    # normalização não autorizada: quem recebe 0..1 onde o motor mediu 0..100 não tem como
+    # saber que a conversão aconteceu.
+    "ai_health_score": Scale(kind=ScaleKind.SCORE_100),
+    "intent_score": Scale(kind=ScaleKind.SCORE_100),
+    "response_stability": Scale(kind=ScaleKind.SCORE_100),
+    # Probabilidades. A `band` é do produtor; a faixa numérica é do contrato.
+    "containment_risk": Scale(kind=ScaleKind.RATIO_UNIT),
+    "conversion_risk": Scale(kind=ScaleKind.RATIO_UNIT),
+    # Dinheiro: faixa ABERTA de propósito. Custo não tem teto contratável, e a unidade vem
+    # da moeda, não da escala.
+    "projected_token_cost": Scale(kind=ScaleKind.CURRENCY),
+    "projected_handoff_cost": Scale(kind=ScaleKind.CURRENCY),
+    # `raw` é a resposta honesta enquanto a faixa for decisão de produto em aberto: é a
+    # única medida do catálogo em que MAIOR é PIOR, e inventar um teto aqui inverteria a
+    # leitura de quem desenha a barra.
+    "response_variance": Scale(kind=ScaleKind.RAW),
+}
+
+
+def _escala_da_saida(public_id: str) -> Scale:
+    escala = _ESCALA_POR_SAIDA.get(public_id)
+    if escala is None:
+        raise EscalaNaoDeclarada(f"`{public_id}` não tem escala pública declarada")
+    return escala
+
+
+def _publicar_medida(m: FactMedida) -> PublicMeasurement:
+    """`FactMedida` → `PublicMeasurement`, com a escala vinda do registro.
+
+    Nenhum número é recalculado, convertido ou completado: o valor sai como o produtor o
+    mediu. O que esta função acrescenta é a FAIXA, que o produtor não declara — e é por
+    isso que ela mora aqui e não no fato.
+    """
+    return PublicMeasurement(
+        id=m.id,
+        value=m.value,
+        availability=m.availability,
+        reason=m.reason,
+        data_coverage=m.data_coverage,
+        scale=_escala_da_saida(m.id),
+        method_version=m.calculation_version,
+        domain=_dominio_de(m.id),
+    )
+
+
+def _publicar_familias_quantitativas(
+    facts: AnalysisFacts, *, min_samples: int | None
+) -> dict[str, object]:
+    """As famílias que só o `analysis-facts-v3` carrega.
+
+    Mesma disciplina de `_publicar_familias_analiticas`: fato que não as declara sai sem os
+    campos, porque "ninguém produziu" e "produziu e não achou" são estados diferentes.
+    """
+    if not isinstance(facts, AnalysisFactsV3):
+        return {}
+
+    saida: dict[str, object] = {}
+
+    if facts.scores is not None:
+        saida["scores"] = tuple(
+            PublicScore(
+                measurement=_publicar_medida(s),
+                composite_of=s.composite_of,
+                window_kind=s.window_kind,
+                window_size=s.window_size,
+            )
+            for s in facts.scores
+        )
+
+    if facts.risks is not None:
+        saida["risks"] = tuple(
+            PublicRisk(id=r.id, measurement=_publicar_medida(r), band=r.band)
+            for r in facts.risks
+        )
+
+    if facts.projections is not None:
+        saida["projections"] = tuple(
+            PublicProjection(
+                id=p.id,
+                horizon=p.horizon,
+                measurement=_publicar_medida(p),
+                currency=p.currency,
+                basis=p.basis,
+            )
+            for p in facts.projections
+        )
+
+    if facts.intents is not None:
+        saida["intents"] = tuple(
+            PublicIntent(
+                intent_id=i.intent_id,
+                score=_publicar_medida(i.score),
+                support=i.support,
+                severity=i.severity,
+                # DERIVADO aqui, e não recebido pronto: `support` e `min_samples_per_intent`
+                # são ambos publicados, então o consumidor pode refazer a conta. Receber o
+                # booleano do produtor criaria uma segunda verdade que ninguém consegue
+                # conferir. Sem limiar declarado não há sub-representação a afirmar.
+                underrepresented=(min_samples is not None and i.support < min_samples),
+                response_variance=(
+                    _publicar_medida(i.response_variance)
+                    if i.response_variance is not None
+                    else None
+                ),
+                response_stability=(
+                    _publicar_medida(i.response_stability)
+                    if i.response_stability is not None
+                    else None
+                ),
+            )
+            for i in facts.intents
+        )
+
+    return saida
+
+
+def _min_samples_de(facts: AnalysisFacts) -> int | None:
+    """O limiar do método, quando o fato o declara."""
+    if not isinstance(facts, AnalysisFactsV3) or facts.method is None:
+        return None
+    return facts.method.min_samples_per_intent
+
+
 def assemble_v3(facts: AnalysisFacts) -> AssemblyV3Outcome:
     """`analysis-facts-*` → `analysis-result-v3`.
 
@@ -241,6 +379,8 @@ def assemble_v3(facts: AnalysisFacts) -> AssemblyV3Outcome:
     `analysis-facts-v1` — que não carrega scores, intents, risks nem projections — produz um
     v3 sem esses campos, e isso é a resposta correta: ninguém os produziu.
     """
+    validate_facts(facts)
+    min_samples = _min_samples_de(facts)
     indicadores = tuple(_publicar_indicador(i) for i in _ordem_canonica(facts))
     dimensoes = tuple(_publicar_dimensao(d) for d in facts.dimensions)
 
@@ -269,7 +409,10 @@ def assemble_v3(facts: AnalysisFacts) -> AssemblyV3Outcome:
             record_count=facts.window.record_count,
             analyzed_at=facts.window.analyzed_at,
         ),
-        method=MethodMetadata(currency=_moeda_declarada(indicadores)),
+        method=MethodMetadata(
+            currency=_moeda_declarada(indicadores),
+            min_samples_per_intent=min_samples,
+        ),
         partiality=_partialidade(indicadores),
         indicators=indicadores,
         # `or None`: um fato sem dimensão nenhuma não exercitou a capacidade, e `()` diria
@@ -278,5 +421,6 @@ def assemble_v3(facts: AnalysisFacts) -> AssemblyV3Outcome:
         recommendations=recomendacoes or None,
         evidence=evidencias or None,
         **_publicar_familias_analiticas(facts),
+        **_publicar_familias_quantitativas(facts, min_samples=min_samples),
     )
     return AssemblyV3Outcome(public_result=publico)

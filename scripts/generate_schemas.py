@@ -22,12 +22,17 @@ from typing import Any
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "src"))
 
-from result_assembler.contracts.facts import AnalysisFacts, AnalysisFactsV2  # noqa: E402
+from result_assembler.contracts.facts import (  # noqa: E402
+    AnalysisFacts,
+    AnalysisFactsV2,
+    AnalysisFactsV3,
+)
 from result_assembler.contracts.result import PublicResult  # noqa: E402
 from result_assembler.contracts.result_v2 import PublicResultV2  # noqa: E402
 from result_assembler.contracts.result_v3 import PublicResultV3  # noqa: E402
 from result_assembler.version import (  # noqa: E402
     FACTS_SCHEMA_V2_VERSION,
+    FACTS_SCHEMA_V3_VERSION,
     FACTS_SCHEMA_VERSION,
     RESULT_SCHEMA_V3_VERSION,
     RESULT_SCHEMA_V2_VERSION,
@@ -41,6 +46,9 @@ ALVOS: tuple[tuple[type, str, str], ...] = (
     (AnalysisFacts, f"{FACTS_SCHEMA_VERSION}.schema.json", FACTS_SCHEMA_VERSION),
     # R4 — a entrada que carrega as familias analiticas. O v1 acima fica intocado.
     (AnalysisFactsV2, f"{FACTS_SCHEMA_V2_VERSION}.schema.json", FACTS_SCHEMA_V2_VERSION),
+    # D2 — a entrada que carrega as familias QUANTITATIVAS. Os dois acima ficam intocados:
+    # a razao de o v3 ser documento proprio e exatamente esta.
+    (AnalysisFactsV3, f"{FACTS_SCHEMA_V3_VERSION}.schema.json", FACTS_SCHEMA_V3_VERSION),
     # R2/R3 — a saida publica do ARGOS completo.
     (PublicResultV3, f"{RESULT_SCHEMA_V3_VERSION}.schema.json", RESULT_SCHEMA_V3_VERSION),
     (PublicResult, f"{RESULT_SCHEMA_VERSION}.schema.json", RESULT_SCHEMA_VERSION),

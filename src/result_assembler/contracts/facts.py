@@ -336,3 +336,163 @@ class AnalysisFactsV2(AnalysisFacts):
                 f"`{self.facts_schema_version}`"
             )
         return self
+
+
+class FactMedida(FactsModel):
+    """A parte MEDIDA de um fato, sem a identidade da família.
+
+    Existe porque escore, risco e projeção são a mesma coisa por baixo — um valor com
+    disponibilidade, motivo, cobertura e procedência — e só diferem no que a família
+    acrescenta. Ter três cópias dos invariantes seria três lugares para eles divergirem.
+
+    `FactIndicator` **não** herda daqui, e isso é deliberado: o `analysis-facts-v1` tem o
+    schema publicado congelado byte a byte, e refatorá-lo para uma base comum reordenaria
+    as propriedades do documento sem que nenhum campo tivesse mudado. A duplicação com o
+    indicador é o preço de não mexer num contrato congelado.
+    """
+
+    id: str = Field(min_length=1)
+    availability: Availability
+    reason: Reason = Reason.OK
+
+    #: `None` sempre que não houver medição. NUNCA 0 para representar ausência.
+    value: float | None = None
+    data_coverage: float | None = Field(default=None, ge=0.0, le=1.0)
+
+    #: Versão do CÁLCULO que produziu este valor — não a do contrato nem a do assembler.
+    calculation_version: str = Field(min_length=1)
+    #: Origem observável: qual função/módulo do domínio produziu.
+    source: str = Field(min_length=1)
+
+    @field_validator("value", "data_coverage", mode="before")
+    @classmethod
+    def _so_numero(cls, v: Any) -> Any:
+        return _exigir_numero(v)
+
+    @field_validator("value")
+    @classmethod
+    def _valor_finito(cls, v: float | None) -> float | None:
+        if v is None:
+            return None
+        if not math.isfinite(float(v)):
+            raise ValueError("value precisa ser finito")
+        return float(v)
+
+    @field_validator("data_coverage")
+    @classmethod
+    def _cobertura_finita(cls, v: float | None) -> float | None:
+        if v is not None and not math.isfinite(float(v)):
+            raise ValueError("data_coverage precisa ser finito")
+        return None if v is None else float(v)
+
+
+class FactScore(FactMedida):
+    """Um escore global. NÃO é dimensão de saúde, e não é indicador.
+
+    `composite_of` só é preenchido em composto. O `ai_health_score` declara as quatro
+    dimensões que o formam — e é isso que impede uma agregação sobre `dimensions[]` somar
+    o agregado junto das partes.
+    """
+
+    composite_of: tuple[str, ...] = ()
+    #: Janela metodológica. Obrigatória em drift: ele é medido DENTRO de uma análise, e sem
+    #: a janela declarada dois valores de análises diferentes pareceriam série.
+    window_kind: str | None = None
+    window_size: float | None = None
+
+
+class FactRisk(FactMedida):
+    """Um risco calculado pelo domínio.
+
+    `band` vem do PRODUTOR ou não vem. Nenhuma camada intermediária a calcula: escolher
+    onde termina "moderado" é decisão de produto, e tomá-la na apresentação a esconderia
+    de quem a revisa.
+    """
+
+    band: str | None = None
+
+
+class FactProjection(FactMedida):
+    """Uma projeção monetária, com horizonte e base declarados.
+
+    `horizon` é DADO e não faz parte do nome: `projected_token_cost` em `month` e em `year`
+    é a mesma métrica em dois horizontes. Codificar o horizonte no id faria quatro métricas
+    onde há duas.
+
+    `basis` existe porque projeção sem base declarada é adivinhação com casas decimais —
+    é a distinção observado/estimado/projetado dentro do próprio fato.
+    """
+
+    horizon: str = Field(min_length=1)
+    currency: str | None = None
+    basis: str | None = None
+
+
+class FactIntent(FactsModel):
+    """O grão fino por intenção.
+
+    Achatar isto em `indicators[]` perderia a identidade da intenção: seis intenções
+    virariam seis indicadores com ids sintéticos.
+
+    `underrepresented` NÃO entra aqui: o consumidor o deriva de `support` contra
+    `min_samples_per_intent`, que são os dois publicados. Mandá-lo pronto criaria uma
+    segunda verdade sobre o mesmo fato.
+    """
+
+    intent_id: str = Field(min_length=1)
+    score: FactMedida
+    #: Conversas observadas nesta intenção. É o denominador da confiança.
+    support: int = Field(ge=0)
+    severity: str | None = None
+    response_variance: FactMedida | None = None
+    response_stability: FactMedida | None = None
+
+
+class FactMethod(FactsModel):
+    """Os PARÂMETROS do método. Não são medidas, e é por isso que têm bloco próprio.
+
+    `min_samples_per_intent` publicado como indicador pareceria algo que a amostra revelou,
+    quando é configuração de quem mediu.
+
+
+    A MOEDA não mora aqui, embora o `MethodMetadata` público a tenha. Ela já é lida dos
+    fatos monetários (`_moeda_declarada`), que é onde ela viajou junto do valor desde o
+    dataset. Aceitá-la também por este bloco daria duas fontes para o mesmo fato, e no dia
+    em que discordassem não haveria como saber qual estava certa.
+    """
+
+    #: `ge=1`: zero amostras por intenção não é um limiar, é a ausência de um.
+    min_samples_per_intent: int | None = Field(default=None, ge=1)
+
+
+class AnalysisFactsV3(AnalysisFactsV2):
+    """Envelope `analysis-facts-v3` — o v2 mais as famílias QUANTITATIVAS.
+
+    Subclasse pela mesma razão do v2: `additionalProperties: false` faz de qualquer
+    acréscimo uma quebra para quem valida contra o schema publicado, inclusive campo
+    opcional. Herda do v2 e não do v1 porque o v3 é o v2 mais estas famílias — quem já
+    emite as analíticas sobe sem perdê-las.
+
+    As quatro famílias entram num ÚNICO bump mesmo que nem todas tenham produtor no dia da
+    estreia. Declará-las uma a uma custaria quatro versões quebrando; e o vocabulário para
+    "declarada e ainda não produzida" já existe:
+
+    `None` e ausencia de PRODUTOR; `()` e produtor que rodou e nao achou.
+    """
+
+    scores: tuple[FactScore, ...] | None = None
+    risks: tuple[FactRisk, ...] | None = None
+    projections: tuple[FactProjection, ...] | None = None
+    intents: tuple[FactIntent, ...] | None = None
+    method: FactMethod | None = None
+
+    @model_validator(mode="after")
+    def _declara_a_versao_certa(self) -> "AnalysisFactsV3":
+        from result_assembler.version import FACTS_SCHEMA_V3_VERSION
+
+        if self.facts_schema_version != FACTS_SCHEMA_V3_VERSION:
+            raise ValueError(
+                f"`AnalysisFactsV3` exige `{FACTS_SCHEMA_V3_VERSION}`; recebido "
+                f"`{self.facts_schema_version}`"
+            )
+        return self

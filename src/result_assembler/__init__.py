@@ -21,6 +21,8 @@ as categorias tipadas da biblioteca perderia campo extra, `NaN` e tipo errado.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from pydantic import ValidationError
 
 from result_assembler.assembler.assemble import AssemblyOutcome, assemble
@@ -33,14 +35,25 @@ from result_assembler.assembler.assemble_v2 import (
 from result_assembler.contracts.analytics import AnalyticsComponent, ComponentStatus
 from result_assembler.contracts.facts import (
     AnalysisFacts,
+    AnalysisFactsV2,
+    AnalysisFactsV3,
     AnalysisWindow,
     Availability,
     CalculationProvenance,
     Denominator,
+    FactAlert,
     FactDimension,
     FactEvidenceSummary,
+    FactExecutiveSummary,
     FactIndicator,
+    FactIntent,
+    FactIssue,
+    FactMedida,
+    FactMethod,
+    FactProjection,
     FactRecommendation,
+    FactRisk,
+    FactScore,
     FactsIdentity,
     IndicatorKind,
     Reason,
@@ -93,6 +106,8 @@ from result_assembler.validation.invariants import validate_facts
 from result_assembler.validation.safety import validate_evidence_safety
 from result_assembler.version import (
     ASSEMBLER_VERSION,
+    FACTS_SCHEMA_V2_VERSION,
+    FACTS_SCHEMA_V3_VERSION,
     FACTS_SCHEMA_VERSION,
     RESULT_SCHEMA_V2_VERSION,
     RESULT_SCHEMA_VERSION,
@@ -102,7 +117,12 @@ from result_assembler.version import (
 
 
 def _campos_contratados() -> frozenset[str]:
-    """Nomes de campo que existem em algum modelo de `analysis-facts-v1`."""
+    """Nomes de campo que existem em algum modelo de `analysis-facts-*`.
+
+    As familias do v2 e do v3 entram: sem elas, um erro em `scores[0].value` sairia com o
+    segmento mascarado, e o log deixaria de dizer ONDE o produtor errou — que e a unica
+    coisa que esta funcao existe para preservar.
+    """
     modelos = (
         AnalysisFacts,
         FactsIdentity,
@@ -113,6 +133,17 @@ def _campos_contratados() -> frozenset[str]:
         FactRecommendation,
         FactEvidenceSummary,
         Denominator,
+        AnalysisFactsV2,
+        FactAlert,
+        FactIssue,
+        FactExecutiveSummary,
+        AnalysisFactsV3,
+        FactMedida,
+        FactScore,
+        FactRisk,
+        FactProjection,
+        FactIntent,
+        FactMethod,
     )
     return frozenset(campo for m in modelos for campo in m.model_fields)
 
@@ -142,19 +173,52 @@ def _local_seguro(loc: tuple[object, ...]) -> str:
     return ".".join(partes)
 
 
+#: Qual classe lê qual versão do documento. É a porta despachando, e não adivinhando.
+#:
+#: Antes daqui `parse_facts` fixava `AnalysisFacts` — a classe do v1 — e como o contrato é
+#: `extra="forbid"`, um documento v2 ou v3 era RECUSADO por trazer campos que o v1 não
+#: declara. Medido: `parse_facts` sobre um documento v2 devolvia `SchemaMismatch`. As
+#: famílias do v2 e do v3 existiam no contrato e não tinham por onde entrar.
+#:
+#: A regra que este mapa implementa é uma só: **o objeto nunca é mais estreito que o
+#: documento**. Parsear um documento que declara v3 como v1 não é perda de campo — é o
+#: assembler publicando `scores: null` ("ninguém produziu") sobre um documento que trazia
+#: scores. Uma mentira, no vocabulário exato que o contrato existe para proteger.
+#:
+#: O caminho inverso é legítimo e NÃO é bloqueado: o montador do v1 lendo um objeto v3
+#: publica a visão do v1, mais estreita por contrato. Os dois montadores leem o MESMO
+#: objeto de propósito — resolver a referência duas vezes abriria a janela para os dois
+#: documentos descreverem estados diferentes da mesma análise.
+_CLASSE_POR_VERSAO: dict[str, type[AnalysisFacts]] = {
+    FACTS_SCHEMA_VERSION: AnalysisFacts,
+    FACTS_SCHEMA_V2_VERSION: AnalysisFactsV2,
+    FACTS_SCHEMA_V3_VERSION: AnalysisFactsV3,
+}
+
+
 def parse_facts(payload: object) -> AnalysisFacts:
-    """`dict` cru → `AnalysisFacts`, com erro da FAMÍLIA da biblioteca.
+    """`dict` cru → `AnalysisFacts` da versão que o documento DECLARA.
 
     Existe porque `model_validate` levanta `pydantic.ValidationError` (Codex R2 [5]):
     campo extra, `NaN`, bool ou string numérica escapariam de um `except AssemblyError`.
-    Nem a mensagem nem a localização ecoam conteúdo do payload.
+    Nem a mensagem nem a localização ecoam conteúdo do payload — e a versão declarada É
+    payload, então ela também não aparece no erro.
+
+    Falha FECHADA: versão que este assembler não sabe ler é recusada, nunca lida "no melhor
+    esforço" pela classe mais próxima.
     """
+    versao = payload.get("facts_schema_version") if isinstance(payload, Mapping) else None
+    modelo = _CLASSE_POR_VERSAO.get(versao) if isinstance(versao, str) else None
+    if modelo is None:
+        raise SchemaMismatch(
+            "versão de facts não suportada", location="facts_schema_version"
+        )
     try:
-        return AnalysisFacts.model_validate(payload)
+        return modelo.model_validate(payload)
     except ValidationError as exc:
         locais = sorted({_local_seguro(tuple(e["loc"])) for e in exc.errors()})
         raise SchemaMismatch(
-            f"payload não corresponde a {FACTS_SCHEMA_VERSION}",
+            "payload não corresponde à versão que declara",
             location="; ".join(locais[:5]),
         ) from None
 

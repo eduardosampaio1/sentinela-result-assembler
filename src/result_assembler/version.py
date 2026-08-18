@@ -17,6 +17,17 @@ from __future__ import annotations
 
 #: Versão desta implementação. Muda quando a MONTAGEM muda, mesmo sem mudar contrato.
 #:
+#: **0.4.0** — a D2. A ENTRADA ganhou o `analysis-facts-v3` com as quatro famílias
+#: quantitativas (`scores`, `risks`, `projections`, `intents`) e o bloco de método; a porta
+#: `parse_facts` passou a DESPACHAR pela versão declarada em vez de fixar o v1 — antes disso
+#: um documento v2 ou v3 era recusado por `extra="forbid"`, e as famílias existiam no
+#: contrato sem ter por onde entrar. O `assemble_v3` passou a chamar `validate_facts`, que
+#: com três versões de entrada deixou de ser rigor e virou o único guarda contra montagem
+#: em melhor esforço.
+#:
+#: Mesma regra de sempre: a MONTAGEM mudou, então o número sobe. O v1 e o v2 saem da
+#: regeneração de schema byte a byte idênticos — medido, não suposto.
+#:
 #: **0.3.0** — a ordem canônica virou DUAS: `CANONICAL_ORDER_V1` congelada nos catorze do
 #: v1 e `CANONICAL_ORDER_V3` derivando dela com quatro saídas novas do catálogo. Junto veio
 #: uma versão de registro por versão de resultado: `indicator-registry-1.0` no v1/v2 e
@@ -33,7 +44,7 @@ from __future__ import annotations
 #: muda o manifesto — e é exatamente o que deve acontecer: o manifesto responde "quem
 #: montou", e quem monta mudou. Mantê-lo em 0.1.0 faria dois assemblers diferentes
 #: assinarem com o mesmo nome, que é o oposto de procedência.
-ASSEMBLER_VERSION = "0.3.0"
+ASSEMBLER_VERSION = "0.4.0"
 
 #: Contrato de ENTRADA (interno, vindo do domínio analítico).
 FACTS_SCHEMA_VERSION = "analysis-facts-v1"
@@ -55,6 +66,11 @@ RESULT_SCHEMA_V2_VERSION = "analysis-result-v2"
 #: documento v1 que trouxesse `alerts` seria invalido contra o proprio schema que ele declara.
 FACTS_SCHEMA_V2_VERSION = "analysis-facts-v2"
 
+#: Envelope de ENTRADA `analysis-facts-v3` — o v2 mais as familias QUANTITATIVAS
+#: (`scores`, `risks`, `projections`, `intents`) e o bloco de METODO. Subclasse, e nao
+#: campos opcionais no v2, pela mesma razao que o v2 nao virou campo opcional no v1.
+FACTS_SCHEMA_V3_VERSION = "analysis-facts-v3"
+
 #: Contrato de SAIDA publico do ARGOS completo. Nao carrega Analytics.
 RESULT_SCHEMA_V3_VERSION = "analysis-result-v3"
 
@@ -64,5 +80,5 @@ SUPPORTED_MEASUREMENT_CONTRACT_VERSIONS: frozenset[str] = frozenset({"measuremen
 
 #: Versões do contrato de ENTRADA aceitas.
 SUPPORTED_FACTS_SCHEMA_VERSIONS: frozenset[str] = frozenset(
-    {FACTS_SCHEMA_VERSION, FACTS_SCHEMA_V2_VERSION}
+    {FACTS_SCHEMA_VERSION, FACTS_SCHEMA_V2_VERSION, FACTS_SCHEMA_V3_VERSION}
 )

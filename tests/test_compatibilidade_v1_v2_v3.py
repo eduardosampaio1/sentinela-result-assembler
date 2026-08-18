@@ -27,6 +27,7 @@ from result_assembler import assemble, parse_facts, serialize_canonical
 from result_assembler.assembler.assemble_v3 import assemble_v3
 from result_assembler.version import (
     FACTS_SCHEMA_V2_VERSION,
+    FACTS_SCHEMA_V3_VERSION,
     FACTS_SCHEMA_VERSION,
     RESULT_SCHEMA_V2_VERSION,
     RESULT_SCHEMA_V3_VERSION,
@@ -130,12 +131,18 @@ def test_o_v3_e_valido_contra_o_PROPRIO_schema() -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════════════
-# 3. A entrada: o v1 continua entrando, e o v2 é aceito sem substituí-lo
+# 3. A entrada: o v1 continua entrando, e nem o v2 nem o v3 o substituem
 # ═══════════════════════════════════════════════════════════════════════════════════════
 
 
-def test_as_duas_versoes_de_ENTRADA_sao_aceitas() -> None:
-    assert SUPPORTED_FACTS_SCHEMA_VERSIONS == {FACTS_SCHEMA_VERSION, FACTS_SCHEMA_V2_VERSION}
+def test_as_TRES_versoes_de_ENTRADA_sao_aceitas() -> None:
+    # Igualdade e nao `in`: o conjunto e a afirmacao. Uma versao a mais aceita sem passar
+    # por aqui seria exatamente o "melhor esforco" que `validate_facts` existe para impedir.
+    assert SUPPORTED_FACTS_SCHEMA_VERSIONS == {
+        FACTS_SCHEMA_VERSION,
+        FACTS_SCHEMA_V2_VERSION,
+        FACTS_SCHEMA_V3_VERSION,
+    }
 
 
 @pytest.mark.parametrize("nome", MASSAS)
