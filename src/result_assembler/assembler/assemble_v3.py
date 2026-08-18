@@ -271,6 +271,16 @@ _ESCALA_POR_SAIDA: dict[str, Scale] = {
     # única medida do catálogo em que MAIOR é PIOR, e inventar um teto aqui inverteria a
     # leitura de quem desenha a barra.
     "response_variance": Scale(kind=ScaleKind.RAW),
+    # D4 — os quatro que ganharam envelope Measurement. Faixas MEDIDAS no motor:
+    # `governance_score` (que e o `consistency_score` agregado) nao passa de 100 por
+    # construcao — a config normaliza `W_LEN + W_SIM = 1` e os dois componentes sao
+    # limitados a 100. `confidence` e `min(1.0, n/full_at_n)`.
+    "consistency_score": Scale(kind=ScaleKind.SCORE_100),
+    "global_confidence": Scale(kind=ScaleKind.RATIO_UNIT),
+    "cross_intent_similarity": Scale(kind=ScaleKind.RATIO_UNIT),
+    # MAIOR E PIOR — a segunda do catalogo nessa direcao, ao lado de `response_variance`.
+    # `clamp(1 - mean_answer_similarity, 0, 1)` garante a faixa.
+    "semantic_drift": Scale(kind=ScaleKind.RATIO_UNIT),
 }
 
 
@@ -362,6 +372,11 @@ def _publicar_familias_quantitativas(
                 response_stability=(
                     _publicar_medida(i.response_stability)
                     if i.response_stability is not None
+                    else None
+                ),
+                semantic_drift=(
+                    _publicar_medida(i.semantic_drift)
+                    if i.semantic_drift is not None
                     else None
                 ),
             )

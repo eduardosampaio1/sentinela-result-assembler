@@ -247,6 +247,12 @@ class PublicIntent(ResultV3Model):
     underrepresented: bool = False
     response_variance: PublicMeasurement | None = None
     response_stability: PublicMeasurement | None = None
+    #: D4 — dispersao das respostas DENTRO da intencao. MAIOR E PIOR.
+    #:
+    #: Existe por intencao, e nao so agregado, para a tela destacar a mais problematica e
+    #: permitir drill-down. NAO ha campo de "pior drift": ele e derivavel desta lista, e um
+    #: campo que duplica um maximo calculavel seria uma segunda verdade sobre o mesmo fato.
+    semantic_drift: PublicMeasurement | None = None
 
 
 class PublicRisk(ResultV3Model):

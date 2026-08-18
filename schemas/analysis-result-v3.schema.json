@@ -390,6 +390,17 @@
         "score": {
           "$ref": "#/$defs/PublicMeasurement"
         },
+        "semantic_drift": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicMeasurement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "severity": {
           "anyOf": [
             {

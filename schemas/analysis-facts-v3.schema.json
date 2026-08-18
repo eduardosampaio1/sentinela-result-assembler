@@ -450,6 +450,17 @@
         "score": {
           "$ref": "#/$defs/FactMedida"
         },
+        "semantic_drift": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FactMedida"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "severity": {
           "anyOf": [
             {

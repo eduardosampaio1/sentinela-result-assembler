@@ -17,6 +17,17 @@ from __future__ import annotations
 
 #: Versão desta implementação. Muda quando a MONTAGEM muda, mesmo sem mudar contrato.
 #:
+#: **0.5.0** — a D4. O `PublicIntent` e o `FactIntent` ganharam `semantic_drift`: a
+#: dispersao das respostas DENTRO da intencao — "a IA da respostas muito diferentes para
+#: perguntas parecidas". O motor ja a calculava por intencao (`mean_answer_similarity`) e a
+#: descartava; eu a dei como sem produtor porque procurei pelo NOME. Junto vieram as escalas
+#: de `consistency_score`, `global_confidence`, `cross_intent_similarity` e `semantic_drift`,
+#: e o `intent_score` passou a vir do `governance_score` real (divida da D2).
+#:
+#: A montagem mudou — familia publica com campo novo e quatro escalas novas —, entao o numero
+#: SOBE. Aditivo e barato hoje porque o v3 ainda nao tem cliente: os cadeados byte-a-byte sao
+#: do v1, e o v3 valida contra o proprio schema, que se regenera.
+#:
 #: **0.4.0** — a D2. A ENTRADA ganhou o `analysis-facts-v3` com as quatro famílias
 #: quantitativas (`scores`, `risks`, `projections`, `intents`) e o bloco de método; a porta
 #: `parse_facts` passou a DESPACHAR pela versão declarada em vez de fixar o v1 — antes disso
@@ -44,7 +55,7 @@ from __future__ import annotations
 #: muda o manifesto — e é exatamente o que deve acontecer: o manifesto responde "quem
 #: montou", e quem monta mudou. Mantê-lo em 0.1.0 faria dois assemblers diferentes
 #: assinarem com o mesmo nome, que é o oposto de procedência.
-ASSEMBLER_VERSION = "0.4.0"
+ASSEMBLER_VERSION = "0.5.0"
 
 #: Contrato de ENTRADA (interno, vindo do domínio analítico).
 FACTS_SCHEMA_VERSION = "analysis-facts-v1"

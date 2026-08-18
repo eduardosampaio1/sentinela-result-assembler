@@ -446,6 +446,11 @@ class FactIntent(FactsModel):
     severity: str | None = None
     response_variance: FactMedida | None = None
     response_stability: FactMedida | None = None
+    #: D4 — `1 - mean_answer_similarity` DENTRO da intencao: quao diferentes sao as respostas
+    #: dadas a perguntas parecidas. MAIOR E PIOR. `Medida` e nao `float` porque intencao com
+    #: uma unica conversa nao tem PAR, logo nao tem similaridade — e um float puro teria de
+    #: escolher entre mentir (`0.0`) e omitir (sem motivo).
+    semantic_drift: FactMedida | None = None
 
 
 class FactMethod(FactsModel):
