@@ -76,7 +76,15 @@ from __future__ import annotations
 #: a RÉGUA: `behavior_score` apareceria dizendo `60–75` sendo um número que vive em 0..100.
 #: Sem campo de orientação: a direção é função total da ordem (`critical < warn` = menor é
 #: pior), e um campo afirmando o que a ordem já diz seria segunda cópia do mesmo fato.
-ASSEMBLER_VERSION = "0.7.0"
+#:
+#: **0.8.0** — `PublicIntent.severity_reason` e `FactIntent.severity_reason`. `severity`
+#: NAO e o limiar aplicado ao escore: o motor a escala para `WARN` por evidencia de
+#: mismatch semantico sem olhar a nota, e medido com o motor real uma intencao com escore
+#: `100` sai `WARN`. Com o limiar da 0.7.0 publicado, `100` cai na zona verde — a tela
+#: pintaria verde ao lado de um cracha de atencao, sem nada explicando. TRES estados
+#: (`None` / `()` / preenchido), porque `severity=WARN` com `[]` so pode vir de produtor
+#: antigo, e a tela precisa poder dizer "motivo nao publicado".
+ASSEMBLER_VERSION = "0.8.0"
 
 #: Contrato de ENTRADA (interno, vindo do domínio analítico).
 FACTS_SCHEMA_VERSION = "analysis-facts-v1"

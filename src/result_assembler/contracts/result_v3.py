@@ -351,8 +351,45 @@ class PublicIntent(ResultV3Model):
     #: Conversas observadas nesta intenção. É o denominador da confiança.
     support: int = Field(ge=0)
     severity: str | None = None
+    #: POR QUE o veredito é esse. Códigos do produtor, na ordem em que ele os emitiu.
+    #:
+    #: **`severity` não é o limiar aplicado ao escore.** Ela é veredito COMPOSTO: o motor a
+    #: escala para `WARN` por evidência de mismatch semântico sem olhar a nota. Medido com o
+    #: motor real, uma intenção com escore `100` sai `WARN` — e com `score.thresholds`
+    #: publicado, `100` cai na zona verde. Sem este campo a tela pinta verde ao lado de um
+    #: crachá de atenção e não tem o que dizer.
+    #:
+    #: **Três estados, e o terceiro é o que impede a tela de mentir por omissão.** `None` =
+    #: produtor não declara (motor anterior a esta fatia); `()` = declarou e não há motivo, o
+    #: `OK` limpo; preenchido = os códigos. Colapsar `None` em `()` apagaria exatamente o caso
+    #: que importa: `severity=WARN` com `[]` só pode vir de produtor antigo, e a tela precisa
+    #: poder dizer *"motivo não publicado"* em vez de mostrar atenção sem nada ao lado. É a
+    #: regra de omitido × vazio da §4.1 aplicada a um campo, não a uma família.
+    #:
+    #: Vocabulário aberto, igual ao de `severity`. O consumidor que receber um código que não
+    #: sabe traduzir deve MOSTRÁ-LO cru — some da tela é pior que aparecer sem tradução.
+    severity_reason: tuple[str, ...] | None = None
     #: Derivado de dado publicado (`support` < `min_samples_per_intent`), não de juízo.
     underrepresented: bool = False
+
+    @model_validator(mode="after")
+    def _veredito_ruim_explica_por_que(self) -> PublicIntent:
+        """Veredito não-OK com motivo declarado VAZIO é recusado antes do consumidor.
+
+        Não é o mesmo cadeado do fato, e a diferença é o modo de falha que cada um pega: no
+        fato, produtor que manda dado incoerente; aqui, MONTAGEM que perde o conteúdo no
+        caminho — um `_publicar_intencao` que passasse `()` sobre um fato preenchido produziria
+        documento válido pelo schema e mudo na tela.
+        """
+        if self.severity_reason is None:
+            return self
+        veredito = (self.severity or "OK").strip().upper()
+        if veredito not in {"", "OK"} and not self.severity_reason:
+            raise ValueError(
+                f"`{self.intent_id}`: `severity={self.severity}` com `severity_reason` vazio — "
+                "a tela mostraria atenção sem ter o que explicar"
+            )
+        return self
     response_variance: PublicMeasurement | None = None
     response_stability: PublicMeasurement | None = None
     #: D4 — dispersao das respostas DENTRO da intencao. MAIOR E PIOR.

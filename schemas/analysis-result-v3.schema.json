@@ -413,6 +413,21 @@
           "default": null,
           "title": "Severity"
         },
+        "severity_reason": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Severity Reason"
+        },
         "support": {
           "minimum": 0,
           "title": "Support",

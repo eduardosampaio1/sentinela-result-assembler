@@ -391,6 +391,11 @@ def _publicar_familias_quantitativas(
                 score=_publicar_medida(i.score),
                 support=i.support,
                 severity=i.severity,
+                # Atravessa como veio, com os TRÊS estados preservados. `None` (produtor não
+                # declara) não pode virar `()` (declarou e não há motivo): é a diferença entre
+                # "motivo não publicado" e "sem motivo", e só a primeira explica um crachá de
+                # atenção sem texto ao lado.
+                severity_reason=i.severity_reason,
                 # DERIVADO aqui, e não recebido pronto: `support` e `min_samples_per_intent`
                 # são ambos publicados, então o consumidor pode refazer a conta. Receber o
                 # booleano do produtor criaria uma segunda verdade que ninguém consegue

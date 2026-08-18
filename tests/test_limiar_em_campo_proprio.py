@@ -39,6 +39,7 @@ from result_assembler.contracts.facts import (
     Reason,
 )
 from result_assembler.contracts.result_v3 import (
+    PublicIntent,
     PublicMeasurement,
     PublicThresholds,
     Scale,
@@ -345,6 +346,10 @@ class TestSpecEDerivadaDoModelo:
             ("PublicMeasurement", PublicMeasurement),
             ("Scale", Scale),
             ("PublicThresholds", PublicThresholds),
+            # Entrou com o `severity_reason`: este bloco havia derivado em QUATRO pontos
+            # ao mesmo tempo (nome da classe, vocabulario da severidade em minusculas,
+            # `semantic_drift` da D4 e o proprio motivo).
+            ("PublicIntent", PublicIntent),
         ],
     )
     def test_o_bloco_da_spec_lista_os_campos_do_modelo(self, cabecalho, modelo):
@@ -361,3 +366,97 @@ class TestSpecEDerivadaDoModelo:
         texto = self.ESPECIFICACAO.read_text(encoding="utf-8")
         assert "fora de `[scale.min, scale.max]` é erro de montagem" not in texto
         assert "faixa canônica do `scale.kind`" in texto
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# O MOTIVO do veredito — sem ele o limiar publicado piora a tela
+# ═══════════════════════════════════════════════════════════════════════════════════════
+
+
+class TestMotivoDoVeredito:
+    """`severity` NÃO é o limiar aplicado ao escore, e é por isso que o motivo precisa vir.
+
+    Medido com o motor real: uma intenção com `governance_score = 100` sai
+    `severity = WARN`, porque `_sentinela_governance.py:161` escala por evidência de mismatch
+    semântico sem olhar a nota. Com `thresholds` publicado, `100` cai na zona verde — a tela
+    pintaria verde ao lado de um crachá de atenção e não teria o que dizer.
+
+    O invariante foi verificado ANTES de virar contrato: varredura de 384 combinações de
+    `(score, penalidade, mismatch_ratio, mismatch_confidence)` sobre a lógica real — zero
+    casos de `severity != OK` sem motivo, e `OK` com `("CROSS_INTENT_PENALTY",)` é caso real.
+    """
+
+    def _intencao(self, **kw) -> dict:
+        # O limiar entra aqui de propósito: o caso que esta classe existe para provar é
+        # justamente escore na ZONA VERDE com veredito de atenção, e sem os cortes não há
+        # zona verde a contradizer.
+        base = {
+            "intent_id": "saudacao",
+            "support": 12,
+            "score": {"id": "intent_score", "value": 100.0, "availability": "available",
+                      "reason": "ok", "thresholds": dict(_LIMIAR), **_PROC},
+        }
+        base.update(kw)
+        return base
+
+    def _publicar(self, **kw) -> dict:
+        doc = _documento()
+        doc["intents"] = [self._intencao(**kw)]
+        return _publicado(doc)["intents"][0]
+
+    def test_os_motivos_atravessam_na_ordem(self):
+        """A ordem é informação: o 1º código determinou o veredito, os seguintes agravam."""
+        pub = self._publicar(
+            severity="CRITICAL",
+            severity_reason=["SCORE_BELOW_CRIT", "CROSS_INTENT_PENALTY"],
+        )
+        assert pub["severity_reason"] == ["SCORE_BELOW_CRIT", "CROSS_INTENT_PENALTY"]
+
+    def test_ok_com_motivo_e_legitimo(self):
+        """`pen > 0` acrescenta motivo sem mudar o veredito. Proibir isso perderia o dado."""
+        pub = self._publicar(severity="OK", severity_reason=["CROSS_INTENT_PENALTY"])
+        assert pub["severity_reason"] == ["CROSS_INTENT_PENALTY"]
+
+    def test_o_caso_que_esta_fatia_existe_para_resolver(self):
+        """Escore 100 (zona verde pelos limiares) com veredito WARN — e agora COM explicação."""
+        pub = self._publicar(severity="WARN", severity_reason=["SEMANTIC_MISMATCH_EVIDENCE"])
+        assert pub["score"]["value"] == 100.0
+        assert pub["score"]["thresholds"]["warn"] == WARN, "100 está acima do warn: zona verde"
+        assert pub["severity"] == "WARN"
+        assert pub["severity_reason"] == ["SEMANTIC_MISMATCH_EVIDENCE"]
+
+    def test_veredito_ruim_com_motivo_VAZIO_e_recusado(self):
+        """O defeito que o campo existe para impedir, tornado irrepresentável."""
+        from result_assembler.errors import SchemaMismatch
+
+        doc = _documento()
+        doc["intents"] = [self._intencao(severity="WARN", severity_reason=[])]
+        with pytest.raises(SchemaMismatch):
+            parse_facts(doc)
+
+    def test_o_publico_tambem_recusa(self):
+        """Fronteira de SAÍDA: pega montagem que perde o motivo, não produtor que não o manda."""
+        from result_assembler.contracts.result_v3 import PublicIntent
+
+        with pytest.raises(ValidationError, match="não teria o que explicar|sem ter o que"):
+            PublicIntent(
+                intent_id="saudacao",
+                score=PublicMeasurement(
+                    id="intent_score", value=100.0, availability=Availability.AVAILABLE,
+                    reason=Reason.OK, scale=Scale(kind=ScaleKind.SCORE_100),
+                ),
+                support=12, severity="WARN", severity_reason=(),
+            )
+
+    def test_produtor_ANTIGO_nao_e_recusado(self):
+        """`None` = não declarou. Recusá-lo transformaria melhoria em quebra."""
+        pub = self._publicar(severity="WARN")
+        assert pub["severity_reason"] is None, "ausência de declaração, não ausência de motivo"
+
+    def test_none_e_lista_vazia_nao_se_confundem_no_documento(self):
+        """`None` = motivo não publicado. `[]` = declarou e não há motivo. A tela dirá coisas
+        diferentes, e por isso a montagem não pode colapsar um no outro."""
+        sem_declarar = self._publicar(severity="OK")
+        declarou_vazio = self._publicar(severity="OK", severity_reason=[])
+        assert sem_declarar["severity_reason"] is None
+        assert declarou_vazio["severity_reason"] == []

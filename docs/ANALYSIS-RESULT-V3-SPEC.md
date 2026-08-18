@@ -303,18 +303,55 @@ saída analítica não se misturam.
 O ARGOS **já produz** esta estrutura (`core/_engine_helpers.py:88`).
 
 ```
-IntentEntry
+PublicIntent
   intent_id            string
-  score                PublicMeasurement
+  score                PublicMeasurement   // o `governance_score`, com `thresholds`
   support              number              // n_conversations
-  severity             "ok" | "warning" | "critical"
+  severity             string | null       // "OK" | "WARN" | "CRITICAL" — do produtor
+  severity_reason      string[] | null     // três estados: null / [] / preenchido
   underrepresented     boolean             // support < min_samples_per_intent
   response_variance    PublicMeasurement | null
   response_stability   PublicMeasurement | null
+  semantic_drift       PublicMeasurement | null
 ```
+
+Bloco travado por gate contra `PublicIntent.model_fields`. Ele havia derivado em quatro pontos
+ao mesmo tempo: chamava a classe de `IntentEntry`, declarava a severidade em minúsculas
+(`"ok" | "warning" | "critical"`) quando o motor emite **`OK` / `WARN` / `CRITICAL`** — quem
+implementasse contra este documento nunca casaria um valor —, e não citava nem o
+`semantic_drift` da D4 nem o `severity_reason`.
 
 `underrepresented` é derivado de dado publicado, não de juízo — e produz a lista de intenções
 sub-representadas sem uma segunda estrutura.
+
+#### `severity` não é o limiar aplicado ao escore
+
+É um veredito **composto**. O motor o escala para `WARN` por evidência de mismatch semântico
+**sem olhar a nota** (`core/_sentinela_governance.py:161`). Medido com o motor real: uma
+intenção com `governance_score = 100` — acima do `warn` de 75, portanto na zona verde do seu
+próprio `score.thresholds` — sai com `severity = "WARN"`.
+
+Por isso `severity_reason` existe, e por isso ele entrou **antes** da fatia visual: sem ele, a
+tela pinta o bullet verde ao lado de um crachá de atenção e não tem o que dizer. O motivo é o
+que transforma uma contradição aparente em duas informações.
+
+**Os três estados, e o terceiro é o que impede a omissão de mentir:**
+
+| valor | significado | o que a tela diz |
+|---|---|---|
+| `null` | produtor não declara (motor anterior a esta fatia) | *"motivo não publicado"* |
+| `[]` | declarou, e não há motivo | nada — é o `OK` limpo |
+| preenchido | os códigos, **na ordem emitida** | o primeiro determinou o veredito; os demais agravam |
+
+**Invariante:** `severity_reason` não-`null` **e** `severity` diferente de `OK` ⇒ lista
+não-vazia. Verificado exaustivamente contra a lógica do motor antes de virar contrato — 384
+combinações de `(score, penalidade, mismatch_ratio, mismatch_confidence)`, zero casos de
+veredito não-OK sem motivo. `severity = "OK"` **com** motivo é caso real (a penalidade de
+contaminação cruzada é registrada sem mudar o veredito) e por isso **não** é proibido.
+
+**Vocabulário aberto**, igual ao de `severity`. Um código novo no motor chega ao consumidor em
+vez de derrubar a montagem. O consumidor que receber um código que não sabe traduzir deve
+**mostrá-lo cru**: sumir da tela é pior que aparecer sem tradução.
 
 ### 4.7 `risks[]`
 

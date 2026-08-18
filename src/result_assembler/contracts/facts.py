@@ -503,6 +503,45 @@ class FactIntent(FactsModel):
     #: Conversas observadas nesta intenção. É o denominador da confiança.
     support: int = Field(ge=0)
     severity: str | None = None
+    #: POR QUE o veredito é esse. Códigos do produtor, na ordem em que ele os emitiu.
+    #:
+    #: Existe porque `severity` **não é função do escore**: o motor escala para `WARN` por
+    #: evidência de mismatch semântico independentemente da nota
+    #: (`core/_sentinela_governance.py:161`). Medido com o motor real: uma intenção com
+    #: `governance_score = 100` sai `severity = WARN`. Publicado o limiar, aquela nota cai na
+    #: zona verde — e sem o motivo a tela mostra bullet verde ao lado de crachá WARN, com nada
+    #: explicando. Veredito sem explicação é o defeito que esta frente inteira vem desfazendo.
+    #:
+    #: `None` ≠ `()`. `None` é produtor que **não declara** o motivo (motor anterior a esta
+    #: fatia); `()` é produtor que declarou e não há motivo — o caso legítimo de `severity=OK`
+    #: limpo. A distinção é o que permite o invariante abaixo sem recusar dado antigo.
+    #:
+    #: Vocabulário ABERTO, como o do próprio `severity`. Fechá-lo num enum faria um código novo
+    #: no motor derrubar a montagem; aberto, ele chega ao consumidor, que é quem precisa decidir
+    #: o que fazer com um código que ainda não sabe traduzir.
+    severity_reason: tuple[str, ...] | None = None
+
+    @model_validator(mode="after")
+    def _veredito_ruim_explica_por_que(self) -> FactIntent:
+        """Produtor que fala precisa explicar um veredito não-OK.
+
+        Verificado exaustivamente contra o motor antes de contratar: varredura de 384
+        combinações de `(score, penalidade, mismatch_ratio, mismatch_confidence)` — **zero**
+        casos de `severity != OK` sem motivo, e `severity == OK` com
+        `("CROSS_INTENT_PENALTY",)` é caso REAL, que por isso não é proibido aqui.
+
+        Só morde quando `severity_reason` não é `None`: um fato de produtor antigo, que nunca
+        declarou o campo, continua válido. Recusá-lo transformaria uma melhoria em quebra.
+        """
+        if self.severity_reason is None:
+            return self
+        veredito = (self.severity or "OK").strip().upper()
+        if veredito not in {"", "OK"} and not self.severity_reason:
+            raise ValueError(
+                f"`{self.intent_id}`: `severity={self.severity}` com `severity_reason` vazio — "
+                "veredito não-OK sem motivo é exatamente o que a tela não consegue explicar"
+            )
+        return self
     response_variance: FactMedida | None = None
     response_stability: FactMedida | None = None
     #: D4 — `1 - mean_answer_similarity` DENTRO da intencao: quao diferentes sao as respostas

@@ -136,11 +136,26 @@ class TestManifestoEInternoPorDesenho:
         assert m.job_id and m.engine_version and m.dataset_fingerprint
 
     def test_nao_carrega_conteudo_analitico(self):
+        """Texto e VALOR da análise não podem aparecer no manifesto.
+
+        O valor numérico é procurado em POSIÇÃO DE NÚMERO (`: 0.8`), não como substring
+        solta. A versão anterior procurava `"0.8"` no dump inteiro e passou a reprovar quando
+        `ASSEMBLER_VERSION` virou `"0.8.0"` — um número de versão colidindo com um valor de
+        métrica. Nada tinha vazado: a asserção é que era larga demais, e larga demais falha
+        pelo motivo errado, que é a maneira mais cara de um gate mentir.
+
+        O valor também deixou de ser literal: ele é LIDO da massa. Assim a massa pode mudar
+        sem o teste passar a medir um número que não está mais lá.
+        """
         bruto = massa_f()
         m = assemble(parse_facts(bruto)).internal_manifest
         texto = json.dumps(m.model_dump(mode="json"), ensure_ascii=False)
-        for proibido in ("Cobrir intencoes sem amostra", "checkout", "0.8"):
-            assert proibido not in texto
+
+        valor = bruto["indicators"][0]["value"]
+        assert isinstance(valor, float), "a massa precisa ter um valor numérico para medir"
+
+        for proibido in ("Cobrir intencoes sem amostra", "checkout", f": {valor}"):
+            assert proibido not in texto, f"conteúdo analítico no manifesto: {proibido!r}"
 
     def test_docstring_declara_que_nao_e_publicavel(self):
         from result_assembler.contracts import manifest
