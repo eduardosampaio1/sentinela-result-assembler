@@ -583,6 +583,17 @@
           "title": "Source",
           "type": "string"
         },
+        "thresholds": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FactThresholds"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "value": {
           "anyOf": [
             {
@@ -708,6 +719,17 @@
           "minLength": 1,
           "title": "Source",
           "type": "string"
+        },
+        "thresholds": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FactThresholds"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "value": {
           "anyOf": [
@@ -852,6 +874,17 @@
           "title": "Source",
           "type": "string"
         },
+        "thresholds": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FactThresholds"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "value": {
           "anyOf": [
             {
@@ -936,6 +969,17 @@
           "title": "Source",
           "type": "string"
         },
+        "thresholds": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FactThresholds"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "value": {
           "anyOf": [
             {
@@ -980,6 +1024,26 @@
         "source"
       ],
       "title": "FactScore",
+      "type": "object"
+    },
+    "FactThresholds": {
+      "additionalProperties": false,
+      "description": "Os dois cortes que o produtor aplica a um número: ok, atenção, crítico.\n\nBloco próprio, e **não** dois campos soltos na medida: `warn` e `critical` só têm sentido\nJUNTOS. Soltos, um fato com `warn` e sem `critical` seria representável — e metade de um\npar de cortes não divide zona nenhuma, além de deixar a direção indeterminada.\n\nNÃO é a escala. A escala é a régua (`score_100` = 0..100); isto são os cortes NELA. A\nprimeira versão desta fatia gravava os cortes em `Scale.minimum/maximum` e a revisão\nadversarial a derrubou: o consumidor renderiza aqueles dois campos como a régua, então\n`behavior_score` apareceria dizendo `60–75` sendo um número que vive em 0..100.\n\n**A ordem carrega a direção**, e por isso não há campo de orientação: `critical < warn` é\nmenor-é-pior, `critical > warn` é maior-é-pior. Um campo afirmando o que a ordem já diz\nseria segunda cópia do mesmo fato, com um validador para reconciliá-las — exatamente o\narranjo que a Regra 14 existe para impedir.",
+      "properties": {
+        "critical": {
+          "title": "Critical",
+          "type": "number"
+        },
+        "warn": {
+          "title": "Warn",
+          "type": "number"
+        }
+      },
+      "required": [
+        "warn",
+        "critical"
+      ],
+      "title": "FactThresholds",
       "type": "object"
     },
     "FactsIdentity": {

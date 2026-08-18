@@ -338,6 +338,49 @@ class AnalysisFactsV2(AnalysisFacts):
         return self
 
 
+class FactThresholds(FactsModel):
+    """Os dois cortes que o produtor aplica a um número: ok, atenção, crítico.
+
+    Bloco próprio, e **não** dois campos soltos na medida: `warn` e `critical` só têm sentido
+    JUNTOS. Soltos, um fato com `warn` e sem `critical` seria representável — e metade de um
+    par de cortes não divide zona nenhuma, além de deixar a direção indeterminada.
+
+    NÃO é a escala. A escala é a régua (`score_100` = 0..100); isto são os cortes NELA. A
+    primeira versão desta fatia gravava os cortes em `Scale.minimum/maximum` e a revisão
+    adversarial a derrubou: o consumidor renderiza aqueles dois campos como a régua, então
+    `behavior_score` apareceria dizendo `60–75` sendo um número que vive em 0..100.
+
+    **A ordem carrega a direção**, e por isso não há campo de orientação: `critical < warn` é
+    menor-é-pior, `critical > warn` é maior-é-pior. Um campo afirmando o que a ordem já diz
+    seria segunda cópia do mesmo fato, com um validador para reconciliá-las — exatamente o
+    arranjo que a Regra 14 existe para impedir.
+    """
+
+    warn: float
+    critical: float
+
+    @field_validator("warn", "critical", mode="before")
+    @classmethod
+    def _so_numero(cls, v: Any) -> Any:
+        return _exigir_numero(v)
+
+    @field_validator("warn", "critical")
+    @classmethod
+    def _corte_finito(cls, v: float) -> float:
+        if not math.isfinite(float(v)):
+            raise ValueError("limiar precisa ser finito")
+        return float(v)
+
+    @model_validator(mode="after")
+    def _cortes_distintos(self) -> FactThresholds:
+        if self.warn == self.critical:
+            raise ValueError(
+                f"limiares iguais (`{self.warn}`): sem zona do meio, e sem a ordem não há "
+                "como saber de que lado da régua fica o ruim"
+            )
+        return self
+
+
 class FactMedida(FactsModel):
     """A parte MEDIDA de um fato, sem a identidade da família.
 
@@ -366,6 +409,19 @@ class FactMedida(FactsModel):
     calculation_version: str = Field(min_length=1)
     #: Origem observável: qual função/módulo do domínio produziu.
     source: str = Field(min_length=1)
+
+    #: Os dois cortes que o produtor aplica a ESTE número, quando aplica.
+    #:
+    #: Vem do produtor ou não vem: nenhuma camada entre o motor e a tela tem autoridade para
+    #: derivar onde começa o "bom". `None` é o caso majoritário — o motor aplica um par de
+    #: limiares a duas das 39 saídas — e é honesto, não lacuna.
+    #:
+    #: O limiar é validado aqui **e** no público, e os dois não são o mesmo cadeado: este é a
+    #: fronteira de ENTRADA (produtor externo manda fato inválido → recusa na porta, com o
+    #: nome do produtor no rastro), e o público é a de SAÍDA (montagem produz documento
+    #: inválido → recusa antes do consumidor). Um par invertido que passasse só a primeira
+    #: seria fato aceito e documento impossível, e o erro apareceria a dois hops da causa.
+    thresholds: FactThresholds | None = None
 
     @field_validator("value", "data_coverage", mode="before")
     @classmethod

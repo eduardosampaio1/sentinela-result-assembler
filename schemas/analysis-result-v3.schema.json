@@ -540,6 +540,17 @@
         "scale": {
           "$ref": "#/$defs/Scale"
         },
+        "thresholds": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicThresholds"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "unit": {
           "anyOf": [
             {
@@ -765,6 +776,26 @@
         "analyzed_at"
       ],
       "title": "PublicSummary",
+      "type": "object"
+    },
+    "PublicThresholds": {
+      "additionalProperties": false,
+      "description": "Os dois cortes que dividem a régua em três zonas: ok, atenção, crítico.\n\n**Não é a escala, e não mora nela.** `Scale` é a régua — *\"a faixa em que o número vive\"* —\ne o consumidor a escreve como régua: `medicaoV3.escalaEscrita` renderiza\n`minimum–maximum` em três lugares da tela. Um limiar gravado ali apareceria rotulado como\na régua de um número que vive noutra: `behavior_score` diria `60–75` sendo `score_100`.\nDuas verdades para um fato, na tela, e sem um teste vermelho — a revisão adversarial\nderrubou exatamente essa primeira versão do desenho.\n\n**Não é a severidade.** `PublicIntent.severity` já traz o veredito do produtor\n(`OK`/`WARN`/`CRITICAL`). Isto traz ONDE ficam as fronteiras, que é outra coisa: é o que\npermite desenhar as zonas em vez de só colorir o número.\n\n## A ORDEM dos cortes carrega a direção, e não há campo para ela\n\n`critical < warn` significa que **menor é pior** — a zona ok fica acima de `warn`.\n`critical > warn` significa que **maior é pior**, e a zona ok fica abaixo. A regra é esta\nfrase, e a leitura não é dedução do consumidor: é o contrato dizendo onde fica o bom.\n\nA segunda versão desta classe tinha um campo `orientation` afirmando a direção, mais um\nvalidador conferindo que ele concordava com a ordem. Foi removido: a direção é **função\ntotal** da ordem, então o campo era uma SEGUNDA cópia de um fato que já estava ali, e o\nvalidador existia só para manter as duas cópias de acordo. Validador que reconcilia duas\nrepresentações do mesmo fato é o sintoma de que a segunda não devia existir — a Regra 14\npelo avesso. O precedente de `ScaleKind` (\"declarada, nunca inferida\") não se aplica:\nescala **não** é derivável do dado (`0.8` não diz se a régua é 0..1 ou 0..100); direção é.\n\nInvariantes:\n\n1. Os dois cortes são finitos. `inf` não corta nada.\n2. Os dois cortes são **DISTINTOS**. É o invariante que sustenta tudo: com `warn` igual a\n   `critical` não há zona do meio *e* a direção fica indeterminada — a régua teria um corte\n   só e nada diria de que lado está o ruim. Um corte único é forma legítima que este\n   contrato ainda não expressa, e recusá-lo é mais honesto que aceitá-lo sem direção.\n\nNão há invariante sobre a presença de `value`: o limiar é propriedade da MÉTRICA, não\ndesta medição. Medição ausente com limiar publicado é o caso útil — a tela sabe onde\nficaria o bom, e desenha o vão com as zonas em vez de um traço sem referência.",
+      "properties": {
+        "critical": {
+          "title": "Critical",
+          "type": "number"
+        },
+        "warn": {
+          "title": "Warn",
+          "type": "number"
+        }
+      },
+      "required": [
+        "warn",
+        "critical"
+      ],
+      "title": "PublicThresholds",
       "type": "object"
     },
     "Reason": {

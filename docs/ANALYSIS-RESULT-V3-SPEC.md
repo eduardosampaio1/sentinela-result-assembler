@@ -74,17 +74,28 @@ PublicMeasurement
                   | "missing_dimension" | "dependency_unavailable"
                   | "not_applicable" | "computation_error"
   data_coverage   number | null        // 0..1
-  evidence_level  string | null
+  confidence      number | null        // 0..1 — desta medição, NÃO `global_confidence`
   scale           Scale
+  thresholds      PublicThresholds | null
   method_version  string | null        // obrigatório onde a fórmula pode mudar
   domain          "semantic" | "behavioral" | "structural" | "economic" | null
+  unit            string | null        // onde a escala não determina (duration, currency)
 
 Scale
   kind            "ratio_unit" | "score_100" | "percent" | "currency"
                   | "count" | "duration" | "raw"
-  min             number | null
-  max             number | null
+  minimum         number | null        // DECLARATIVO: a régua, não o cadeado
+  maximum         number | null
+
+PublicThresholds
+  warn            number
+  critical        number
 ```
+
+O bloco acima é travado por gate contra os modelos reais
+(`test_spec_e_derivada_do_modelo`). Antes do gate ele havia derivado três vezes: listava um
+`evidence_level` que não existe, chamava os campos da `Scale` de `min`/`max`, e não citava o
+`confidence` que a D5 introduziu.
 
 ### 3.1 Invariantes
 
@@ -92,7 +103,18 @@ Scale
 2. `availability ∈ {not_measured, not_applicable, calculation_failed}` ⇒ `value = null`
 3. `availability = partially_measured` ⇒ `value != null` **e** `data_coverage < 1`
 4. `reason = "ok"` ⇔ `availability ∈ {measured, partially_measured}`
-5. `value` fora de `[scale.min, scale.max]` é erro de montagem
+5. `value` fora da **faixa canônica do `scale.kind`** é erro de montagem —
+   `ratio_unit` = 0..1, `score_100` e `percent` = 0..100. As demais têm faixa **aberta** e o
+   invariante não morde nelas.
+
+   **`scale.minimum`/`maximum` NÃO são o cadeado.** Eles declaram a régua para quem lê; a
+   validação usa a faixa canônica do `kind`. A redação anterior deste item dizia
+   *"`value` fora de `[scale.min, scale.max]`"* — e essa frase custou um desenho errado:
+   a fatia do limiar começou gravando os cortes `75/60` em `minimum`/`maximum` supondo que
+   ali houvesse restrição, quando o efeito real seria a tela escrever `60–75` como a régua de
+   um número que vive em 0..100.
+6. `thresholds`, quando presente: cortes finitos, **distintos**, e dentro da faixa canônica do
+   `kind`. Um corte fora da régua deixaria a zona inalcançável.
 
 ### 3.2 `reason` atravessa a fronteira
 
@@ -115,6 +137,43 @@ Toda medição declara `scale`. **Nenhuma conversão silenciosa em nenhuma camad
 0..100**, com `scale.kind = "score_100"`. Dividir por 100 no bridge seria normalização
 numérica não autorizada — a mudança de escala é decisão metodológica do produtor, não da
 publicação.
+
+### 3.4 Limiar é campo próprio, e a ordem carrega a direção
+
+A **escala** é a régua; o **limiar** são os cortes nela. São campos diferentes porque
+respondem perguntas diferentes — *"em que régua este número vive"* e *"onde começa o ruim"* —
+e porque o consumidor já renderiza `minimum`/`maximum` como a régua.
+
+`critical < warn` significa **menor é pior**: a zona ok fica acima de `warn`.
+`critical > warn` significa **maior é pior**, e a zona ok fica abaixo. Não há campo de
+orientação: a direção é função total da ordem, e um campo afirmando o que a ordem já diz seria
+segunda cópia do mesmo fato — com um validador para reconciliá-las, que é o arranjo que a
+Regra 14 existe para impedir. O precedente de `scale.kind` (*"declarada, nunca inferida"*) não
+se aplica: escala **não** é derivável do dado (`0.8` não diz se a régua é 0..1 ou 0..100);
+direção é.
+
+**Quem tem limiar.** O motor aplica um par — `THR_WARN = 75`, `THR_CRIT = 60` — a duas saídas:
+`intent_score` (que publica o `governance_score`, exatamente o número julgado em
+`_sentinela_governance.py:153`) e `behavior_score`. Nas outras o campo sai `null`, e isso é
+honesto: aplicar `75/60` a um custo em dólar ou a uma taxa de conversão seria inventar
+semântica que ninguém mediu. Quem decide o "bom" das outras é produto.
+
+**Por que `behavior_score` recebe o mesmo par.** Ele é `max(0, raw_governance_score −
+cross_intent_penalty)` **sem** o fator de confiança amostral, por decisão de owner da D5. Os
+limiares foram aplicados historicamente ao número **com** o fator. Medido antes de publicar:
+varredura de `raw × penalidade`, 101×101 = **10.201 pontos**, com amostra cheia
+(`n ≥ CONF_FULL_AT_N = 10`) → **zero** pontos de divergência, porque em `conf = 1` as duas
+fórmulas são idênticas. A divergência é exclusivamente efeito de amostra curta — que é o que a
+D5 tirou do valor e passou a reportar ao lado, em `confidence`. Consequência declarada: na
+faixa `n ∈ [5, 9]` — do piso de cobertura à confiança cheia — o alarme deixa de disparar por
+evidência fina, de propósito.
+
+**Limiar não depende de valor.** Ele é propriedade da métrica, não da medição. Medição ausente
+com limiar publicado é o caso útil: a tela sabe onde ficaria o bom e desenha o vão com as
+zonas, em vez de um traço sem referência.
+
+**Limiar nunca altera `value`.** Mesma regra de `confidence`. Uma camada que "ajustasse" o
+valor para dentro da zona estaria produzindo métrica.
 
 ---
 

@@ -32,6 +32,7 @@ from result_assembler.contracts.facts import (
     FactDimension,
     FactIndicator,
     FactMedida,
+    FactThresholds,
 )
 from result_assembler.contracts.result import (
     IndicatorState,
@@ -55,6 +56,7 @@ from result_assembler.contracts.result_v3 import (
     PublicResultV3,
     PublicRisk,
     PublicScore,
+    PublicThresholds,
     Scale,
     ScaleKind,
 )
@@ -295,12 +297,35 @@ def _escala_da_saida(public_id: str) -> Scale:
     return escala
 
 
+def _publicar_limiar(limiar: FactThresholds | None) -> PublicThresholds | None:
+    """`FactThresholds` → `PublicThresholds`, campo a campo e sem conta.
+
+    Existe como função em vez de expressão inline porque a AUSÊNCIA precisa atravessar como
+    ausência. Um `PublicThresholds(...)` construído sempre, com zeros no lugar do que não
+    veio, publicaria `warn=0` — que nesta escala é a fronteira mais severa possível — para as
+    36 saídas a que o motor não aplica limiar nenhum. É o absence-as-zero na sua forma mais
+    cara: não some da tela, aparece como alarme.
+
+    A conversão é campo a campo e sem conta. **A ordem é preservada**, e isso não é detalhe de
+    transporte: é a ordem que diz de que lado da régua fica o ruim, então trocar `warn` por
+    `critical` aqui inverteria as zonas na tela sem mudar nenhum número. Os dois modelos
+    recusam cortes iguais, cada um na sua fronteira.
+    """
+    if limiar is None:
+        return None
+    return PublicThresholds(warn=limiar.warn, critical=limiar.critical)
+
+
 def _publicar_medida(m: FactMedida) -> PublicMeasurement:
     """`FactMedida` → `PublicMeasurement`, com a escala vinda do registro.
 
     Nenhum número é recalculado, convertido ou completado: o valor sai como o produtor o
     mediu. O que esta função acrescenta é a FAIXA, que o produtor não declara — e é por
     isso que ela mora aqui e não no fato.
+
+    O LIMIAR é o contrário da faixa: ele vem do produtor ou não vem. A faixa é propriedade da
+    régua e esta camada a conhece pelo registro; onde começa o "bom" é juízo de quem mediu, e
+    uma camada de transporte que o inventasse estaria produzindo métrica.
     """
     return PublicMeasurement(
         id=m.id,
@@ -313,6 +338,7 @@ def _publicar_medida(m: FactMedida) -> PublicMeasurement:
         confidence=m.confidence,
         method_version=m.calculation_version,
         domain=_dominio_de(m.id),
+        thresholds=_publicar_limiar(m.thresholds),
     )
 
 

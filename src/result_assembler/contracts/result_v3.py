@@ -38,9 +38,10 @@ produtor algum atrás — passou anos parecendo resposta.
 
 from __future__ import annotations
 
+import math
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from result_assembler.contracts.facts import Availability, Reason
 from result_assembler.contracts.result import (
@@ -99,6 +100,70 @@ _FAIXAS_CANONICAS: dict[ScaleKind, tuple[float, float]] = {
     ScaleKind.SCORE_100: (0.0, 100.0),
     ScaleKind.PERCENT: (0.0, 100.0),
 }
+
+
+class PublicThresholds(ResultV3Model):
+    """Os dois cortes que dividem a régua em três zonas: ok, atenção, crítico.
+
+    **Não é a escala, e não mora nela.** `Scale` é a régua — *"a faixa em que o número vive"* —
+    e o consumidor a escreve como régua: `medicaoV3.escalaEscrita` renderiza
+    `minimum–maximum` em três lugares da tela. Um limiar gravado ali apareceria rotulado como
+    a régua de um número que vive noutra: `behavior_score` diria `60–75` sendo `score_100`.
+    Duas verdades para um fato, na tela, e sem um teste vermelho — a revisão adversarial
+    derrubou exatamente essa primeira versão do desenho.
+
+    **Não é a severidade.** `PublicIntent.severity` já traz o veredito do produtor
+    (`OK`/`WARN`/`CRITICAL`). Isto traz ONDE ficam as fronteiras, que é outra coisa: é o que
+    permite desenhar as zonas em vez de só colorir o número.
+
+    ## A ORDEM dos cortes carrega a direção, e não há campo para ela
+
+    `critical < warn` significa que **menor é pior** — a zona ok fica acima de `warn`.
+    `critical > warn` significa que **maior é pior**, e a zona ok fica abaixo. A regra é esta
+    frase, e a leitura não é dedução do consumidor: é o contrato dizendo onde fica o bom.
+
+    A segunda versão desta classe tinha um campo `orientation` afirmando a direção, mais um
+    validador conferindo que ele concordava com a ordem. Foi removido: a direção é **função
+    total** da ordem, então o campo era uma SEGUNDA cópia de um fato que já estava ali, e o
+    validador existia só para manter as duas cópias de acordo. Validador que reconcilia duas
+    representações do mesmo fato é o sintoma de que a segunda não devia existir — a Regra 14
+    pelo avesso. O precedente de `ScaleKind` ("declarada, nunca inferida") não se aplica:
+    escala **não** é derivável do dado (`0.8` não diz se a régua é 0..1 ou 0..100); direção é.
+
+    Invariantes:
+
+    1. Os dois cortes são finitos. `inf` não corta nada.
+    2. Os dois cortes são **DISTINTOS**. É o invariante que sustenta tudo: com `warn` igual a
+       `critical` não há zona do meio *e* a direção fica indeterminada — a régua teria um corte
+       só e nada diria de que lado está o ruim. Um corte único é forma legítima que este
+       contrato ainda não expressa, e recusá-lo é mais honesto que aceitá-lo sem direção.
+
+    Não há invariante sobre a presença de `value`: o limiar é propriedade da MÉTRICA, não
+    desta medição. Medição ausente com limiar publicado é o caso útil — a tela sabe onde
+    ficaria o bom, e desenha o vão com as zonas em vez de um traço sem referência.
+    """
+
+    #: Fronteira da atenção, na mesma unidade e escala do valor que ela julga.
+    warn: float
+    #: Fronteira do crítico, na mesma unidade e escala do valor que ela julga.
+    #: Comparado a `warn`, é ele que diz de que lado da régua fica o ruim.
+    critical: float
+
+    @field_validator("warn", "critical")
+    @classmethod
+    def _corte_finito(cls, v: float) -> float:
+        if not math.isfinite(float(v)):
+            raise ValueError("limiar precisa ser finito")
+        return float(v)
+
+    @model_validator(mode="after")
+    def _cortes_distintos(self) -> PublicThresholds:
+        if self.warn == self.critical:
+            raise ValueError(
+                f"limiares iguais (`{self.warn}`): sem zona do meio, e sem a ordem não há "
+                "como saber de que lado da régua fica o ruim"
+            )
+        return self
 
 
 class Domain(str, Enum):
@@ -173,6 +238,17 @@ class PublicMeasurement(ResultV3Model):
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     #: Unidade textual quando a escala não a determina (`duration`, `currency`).
     unit: str | None = None
+    #: Os cortes que dividem a régua em ok/atenção/crítico, quando o produtor os declara.
+    #:
+    #: `None` é o caso majoritário e é honesto: das 39 saídas do catálogo, o motor aplica um
+    #: par de limiares a **duas**. Aplicar `75/60` a um custo em dólar ou a uma taxa de
+    #: conversão seria inventar semântica que ninguém mediu, e quem decide o "bom" das outras
+    #: é produto — não esta camada, que só transporta.
+    #:
+    #: **Nunca altera `value`.** Mesma regra de `confidence`: o limiar julga o número, não o
+    #: modifica. Uma camada que "normalizasse" o valor para caber na zona estaria produzindo
+    #: métrica, e nenhuma camada entre o motor e a tela tem autoridade para isso.
+    thresholds: PublicThresholds | None = None
 
     @model_validator(mode="after")
     def _coerencia(self) -> "PublicMeasurement":
@@ -222,6 +298,24 @@ class PublicMeasurement(ResultV3Model):
                     f"`{self.id}`: valor `{self.value}` fora de `{self.scale.kind.value}` "
                     f"({piso}..{teto}) — erro de montagem, não arredondamento"
                 )
+
+        # 6. Um corte fora da régua não corta nada. `warn=75` num `ratio_unit` (0..1) deixaria
+        #    a zona de atenção inalcançável: a tela desenharia um bullet cuja fronteira fica
+        #    fora do próprio eixo, e nenhum valor possível cairia em "atenção". Vale mesmo sem
+        #    valor — o limiar é da métrica, e um limiar impossível é erro de montagem hoje,
+        #    não quando a primeira medição aparecer.
+        if self.thresholds is not None and faixa is not None:
+            piso, teto = faixa
+            for nome, corte in (
+                ("warn", self.thresholds.warn),
+                ("critical", self.thresholds.critical),
+            ):
+                if not (piso <= corte <= teto):
+                    raise ValueError(
+                        f"`{self.id}`: limiar `{nome}={corte}` fora de "
+                        f"`{self.scale.kind.value}` ({piso}..{teto}) — corte fora da régua "
+                        "não divide zona nenhuma"
+                    )
         return self
 
 

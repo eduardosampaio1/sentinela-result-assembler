@@ -49,6 +49,7 @@ from result_assembler.contracts.facts import (
     FactIntent,
     FactIssue,
     FactMedida,
+    FactThresholds,
     FactMethod,
     FactProjection,
     FactRecommendation,
@@ -144,6 +145,7 @@ def _campos_contratados() -> frozenset[str]:
         FactProjection,
         FactIntent,
         FactMethod,
+        FactThresholds,
     )
     return frozenset(campo for m in modelos for campo in m.model_fields)
 
@@ -266,6 +268,7 @@ __all__ = [
     "FactIntent",
     "FactIssue",
     "FactMedida",
+    "FactThresholds",
     "FactMethod",
     "FactProjection",
     "FactRisk",
