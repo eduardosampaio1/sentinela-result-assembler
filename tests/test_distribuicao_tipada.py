@@ -11,6 +11,7 @@ O teste olha o ARTEFATO construído, não a árvore de fontes — é o artefato 
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -49,6 +50,14 @@ class MarcadorNoArtefatoTests(unittest.TestCase):
         except ImportError:
             return
         cls.saida = RAIZ / "dist" / "_gate_py_typed"
+        # LIMPA antes de construir, e nao e higiene: sem isto o gate quebra em todo BUMP DE
+        # VERSAO. `build` escreve o artefato com a versao no nome e nao remove os antigos,
+        # entao apos 0.2.0 -> 0.3.0 o diretorio guarda os dois e as assercoes de "exatamente
+        # um wheel" reprovam — acusando o release em vez do defeito.
+        #
+        # Medido: foi exatamente o que aconteceu ao subir para 0.3.0.
+        if cls.saida.exists():
+            shutil.rmtree(cls.saida)
         resultado = subprocess.run(
             [sys.executable, "-m", "build", "--outdir", str(cls.saida), str(RAIZ)],
             capture_output=True,

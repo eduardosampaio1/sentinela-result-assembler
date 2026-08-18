@@ -17,12 +17,23 @@ from __future__ import annotations
 
 #: Versão desta implementação. Muda quando a MONTAGEM muda, mesmo sem mudar contrato.
 #:
+#: **0.3.0** — a ordem canônica virou DUAS: `CANONICAL_ORDER_V1` congelada nos catorze do
+#: v1 e `CANONICAL_ORDER_V3` derivando dela com quatro saídas novas do catálogo. Junto veio
+#: uma versão de registro por versão de resultado: `indicator-registry-1.0` no v1/v2 e
+#: `1.1` no v3.
+#:
+#: O número sobe pela mesma razão da 0.2.0, e ela vale como precedente: a MONTAGEM mudou.
+#: Reconstruir a 0.2.0 com este conteúdo faria dois assemblers diferentes assinarem o
+#: manifesto com o mesmo nome. A reconstrução da 0.1.0 foi o caso OPOSTO — mesmo intento de
+#: código, artefato errado —, e por isso lá o número ficou e o `(source_commit, sha256)` do
+#: lock carregou a identidade sozinho.
+#:
 #: **0.2.0** — o Recovery acrescentou `analysis-result-v3`, `analysis-facts-v2` e o catálogo
 #: ARGOS. Este literal viaja no manifesto INTERNO de todo documento montado, então subi-lo
 #: muda o manifesto — e é exatamente o que deve acontecer: o manifesto responde "quem
 #: montou", e quem monta mudou. Mantê-lo em 0.1.0 faria dois assemblers diferentes
 #: assinarem com o mesmo nome, que é o oposto de procedência.
-ASSEMBLER_VERSION = "0.2.0"
+ASSEMBLER_VERSION = "0.3.0"
 
 #: Contrato de ENTRADA (interno, vindo do domínio analítico).
 FACTS_SCHEMA_VERSION = "analysis-facts-v1"
