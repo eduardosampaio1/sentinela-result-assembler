@@ -68,7 +68,15 @@ from __future__ import annotations
 #: muda o manifesto — e é exatamente o que deve acontecer: o manifesto responde "quem
 #: montou", e quem monta mudou. Mantê-lo em 0.1.0 faria dois assemblers diferentes
 #: assinarem com o mesmo nome, que é o oposto de procedência.
-ASSEMBLER_VERSION = "0.6.0"
+#:
+#: **0.7.0** — `PublicThresholds` e `FactThresholds`: os dois cortes que dividem a régua em
+#: ok/atenção/crítico, em campo PRÓPRIO. A primeira versão da fatia os gravava em
+#: `Scale.minimum/maximum` e a revisão adversarial derrubou — não por validação (a faixa é
+#: verificada pela canônica do `kind`), mas porque o consumidor renderiza aqueles campos como
+#: a RÉGUA: `behavior_score` apareceria dizendo `60–75` sendo um número que vive em 0..100.
+#: Sem campo de orientação: a direção é função total da ordem (`critical < warn` = menor é
+#: pior), e um campo afirmando o que a ordem já diz seria segunda cópia do mesmo fato.
+ASSEMBLER_VERSION = "0.7.0"
 
 #: Contrato de ENTRADA (interno, vindo do domínio analítico).
 FACTS_SCHEMA_VERSION = "analysis-facts-v1"
