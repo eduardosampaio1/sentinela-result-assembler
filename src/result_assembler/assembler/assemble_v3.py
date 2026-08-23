@@ -38,7 +38,6 @@ from result_assembler.contracts.result import (
     IndicatorState,
     Partiality,
     PublicDenominator,
-    PublicEvidenceSummary,
     PublicRecommendation,
     PublicSummary,
 )
@@ -46,6 +45,7 @@ from result_assembler.contracts.result_v3 import (
     RESULT_V3_SCHEMA_VERSION,
     Domain,
     PublicAlert,
+    PublicEvidenceSummaryV3,
     PublicExecutiveSummary,
     PublicIssue,
     MethodMetadata,
@@ -463,7 +463,16 @@ def assemble_v3(facts: AnalysisFacts) -> AssemblyV3Outcome:
         for r in sorted(facts.recommendations, key=lambda r: r.order)
     )
     evidencias = tuple(
-        PublicEvidenceSummary(id=e.id, kind=e.kind, observed_count=e.observed_count, label=e.label)
+        # O TRECHO atravessa. Campo a campo, e nao por `model_dump`: a allowlist so e allowlist
+        # enquanto alguem precisar ESCREVER cada campo aqui. Um campo novo no fato que chegasse
+        # ao publico por copia seria a allowlist virando denylist sem ninguem decidir.
+        PublicEvidenceSummaryV3(
+            id=e.id,
+            kind=e.kind,
+            observed_count=e.observed_count,
+            label=e.label,
+            excerpt=e.excerpt,
+        )
         for e in facts.evidence
     )
 

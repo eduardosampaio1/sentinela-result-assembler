@@ -184,10 +184,22 @@
       "title": "PublicDenominator",
       "type": "object"
     },
-    "PublicEvidenceSummary": {
+    "PublicEvidenceSummaryV3": {
       "additionalProperties": false,
-      "description": "Resumo agregado de evidência — só campos da allowlist.",
+      "description": "Resumo de evidencia do v3 — agregado, **e com o trecho observado**.\n\n## Por que modelo proprio, e nao um campo no compartilhado\n\n`PublicEvidenceSummary` serve v1, v2 e v3, e os dois primeiros tem\n`additionalProperties: false` no schema publicado. Campo novo la e quebra para quem valida\ncontra o contrato que ja saiu. O v3 ja tem modelo proprio para medicao, alerta e intencao\npela mesma razao.\n\n## O trecho, e por que a regra anterior caiu\n\nA regra dizia *\"evidencia nao carrega texto livre de conversa\"*. Decisao do owner: evidencia\nsem o texto observado nao e evidencia — o texto e o que mostra ONDE o problema esta, e e o\nque da nome a familia.\n\nA premissa da regra mudou. Quando ela foi escrita, oito das onze pecas de privacidade nao\ntinham chamador de producao (esta no cabecalho do `gate.py` da Ingestao). Hoje o Privacy\nGate e porta unica, detecta sete classes fechadas — identificador direto, quase-identificador,\natributo sensivel, credencial, segredo, identificador financeiro e de rede —, e o clearance\ne garantido por `check (privacy_clearance = 'passed')` no banco.\n\nA allowlist continua sendo a defesa: campo novo no fato nao chega aqui sem alguem escrever.",
       "properties": {
+        "excerpt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Excerpt"
+        },
         "id": {
           "title": "Id",
           "type": "string"
@@ -218,7 +230,7 @@
         "observed_count",
         "label"
       ],
-      "title": "PublicEvidenceSummary",
+      "title": "PublicEvidenceSummaryV3",
       "type": "object"
     },
     "PublicExecutiveSummary": {
@@ -930,7 +942,7 @@
       "anyOf": [
         {
           "items": {
-            "$ref": "#/$defs/PublicEvidenceSummary"
+            "$ref": "#/$defs/PublicEvidenceSummaryV3"
           },
           "type": "array"
         },

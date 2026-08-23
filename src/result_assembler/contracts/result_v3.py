@@ -448,6 +448,40 @@ class MethodMetadata(ResultV3Model):
 # ═══════════════════════════════════════════════════════════════════════════════════════
 
 
+class PublicEvidenceSummaryV3(ResultV3Model):
+    """Resumo de evidencia do v3 — agregado, **e com o trecho observado**.
+
+    ## Por que modelo proprio, e nao um campo no compartilhado
+
+    `PublicEvidenceSummary` serve v1, v2 e v3, e os dois primeiros tem
+    `additionalProperties: false` no schema publicado. Campo novo la e quebra para quem valida
+    contra o contrato que ja saiu. O v3 ja tem modelo proprio para medicao, alerta e intencao
+    pela mesma razao.
+
+    ## O trecho, e por que a regra anterior caiu
+
+    A regra dizia *"evidencia nao carrega texto livre de conversa"*. Decisao do owner: evidencia
+    sem o texto observado nao e evidencia — o texto e o que mostra ONDE o problema esta, e e o
+    que da nome a familia.
+
+    A premissa da regra mudou. Quando ela foi escrita, oito das onze pecas de privacidade nao
+    tinham chamador de producao (esta no cabecalho do `gate.py` da Ingestao). Hoje o Privacy
+    Gate e porta unica, detecta sete classes fechadas — identificador direto, quase-identificador,
+    atributo sensivel, credencial, segredo, identificador financeiro e de rede —, e o clearance
+    e garantido por `check (privacy_clearance = 'passed')` no banco.
+
+    A allowlist continua sendo a defesa: campo novo no fato nao chega aqui sem alguem escrever.
+    """
+
+    id: str
+    kind: str
+    observed_count: int
+    label: str | None
+    #: O trecho observado, sanitizado na origem e varrido na saida. `None` quando a evidencia
+    #: nao e textual — e isso e comum, nem toda evidencia e texto.
+    excerpt: str | None = None
+
+
 class PublicResultV3(ResultV3Model):
     """`analysis-result-v3`.
 
@@ -475,7 +509,9 @@ class PublicResultV3(ResultV3Model):
     projections: tuple[PublicProjection, ...] | None = None
 
     recommendations: tuple[PublicRecommendation, ...] | None = None
-    evidence: tuple[PublicEvidenceSummary, ...] | None = None
+    #: O v3 usa o modelo PROPRIO, com `excerpt`. O compartilhado serve v1 e v2, que tem
+    #: `additionalProperties: false` e nao podem ganhar campo. Ver `PublicEvidenceSummaryV3`.
+    evidence: tuple[PublicEvidenceSummaryV3, ...] | None = None
     alerts: tuple["PublicAlert", ...] | None = None
     issues: tuple["PublicIssue", ...] | None = None
     executive_summary: "PublicExecutiveSummary | None" = None

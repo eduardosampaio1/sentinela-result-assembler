@@ -92,7 +92,12 @@ class PublicRecommendation(ResultModel):
 
 
 class PublicEvidenceSummary(ResultModel):
-    """Resumo agregado de evidência — só campos da allowlist."""
+    """Resumo agregado de evidência — só campos da allowlist.
+
+    **Sem `excerpt`, e de propósito.** O trecho observado entrou no v3 e SÓ no v3: este modelo é
+    compartilhado pelo v1 e pelo v2, os dois com `additionalProperties: false` no schema
+    publicado, e campo novo ali é quebra para quem valida. Ver `PublicEvidenceSummaryV3`.
+    """
 
     id: str
     kind: str

@@ -20,6 +20,8 @@ import math
 from enum import Enum
 from typing import Any
 
+from typing import Final
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
 
@@ -208,19 +210,54 @@ class FactRecommendation(FactsModel):
     evidence_refs: tuple[str, ...] = ()
 
 
-class FactEvidenceSummary(FactsModel):
-    """Resumo de evidência — agregado e seguro por construção.
+#: Teto do trecho de evidência. Um excerto é um excerto.
+#:
+#: Publicar a conversa inteira seria republicar o dataset pelo documento de resultado — que é
+#: outra coisa, e tem outra porta (o export, com retenção e auditoria próprias).
+MAX_EXCERPT_LEN: Final = 400
 
-    Não carrega texto livre de conversa, prompt, resposta, caminho, chave nem id interno.
-    O que passa é declarado campo a campo aqui; a validação de segurança confere de novo.
+
+class FactEvidenceSummary(FactsModel):
+    """Resumo de evidência — agregado, **e agora com o trecho observado**.
+
+    ## A regra anterior caiu, e a premissa dela é que mudou
+
+    Este docstring dizia *"não carrega texto livre de conversa, prompt, resposta"*. Decisão do
+    owner: evidência sem o texto observado não é evidência — o texto é justamente o que mostra
+    ONDE o problema está, e é o que dá nome à família.
+
+    A regra não cai por conveniência. Quando ela foi escrita, **oito das onze peças de
+    privacidade não tinham chamador de produção** — está no cabeçalho do `gate.py` da Ingestão.
+    Ela era a defesa certa para aquele mundo. O `ING-PRIVACY-WIRING-05` fiou as peças.
+
+    Hoje:
+
+    * o Privacy Gate é **porta única** — o pipeline canônico não grava sem passar por ela;
+    * ele detecta e transforma sete classes fechadas: identificador direto (CPF, telefone,
+      e-mail, nome completo, RG), quase-identificador, atributo sensível, credencial, segredo,
+      identificador financeiro e identificador de rede;
+    * o clearance é **estruturalmente garantido**: `orchestrator_ingestion_inbox` tem
+      `check (privacy_clearance = 'passed')`. A existência da linha É a prova;
+    * cada dataset carrega `privacy_policy_version` e um manifesto com `values_redacted_count`.
+
+    ## O que continua valendo
+
+    Caminho, chave, credencial e id interno seguem PROIBIDOS, e a varredura de segurança confere
+    campo a campo — inclusive no trecho. O Gate cobre o dado do cliente; a varredura cobre o que
+    o nosso lado poderia colar ali.
     """
 
     id: str = Field(min_length=1)
     kind: str = Field(min_length=1)
-    #: Quantos itens sustentam a evidência. Agregado, nunca o conteúdo.
+    #: Quantos itens sustentam a evidência. Agregado — e continua sendo o número que importa.
     observed_count: int = Field(ge=0)
     #: Rótulo curto e já sanitizado pelo domínio (ex.: nome de intenção).
     label: str | None = None
+    #: O TRECHO observado, já sanitizado pelo Privacy Gate e cortado no teto.
+    #:
+    #: `None` quando o produtor não tem trecho para aquela evidência — e isso é comum: nem toda
+    #: evidência é textual. Ausência aqui não é "não achamos"; é "esta evidência não é texto".
+    excerpt: str | None = Field(default=None, max_length=MAX_EXCERPT_LEN)
 
 
 class FactsIdentity(FactsModel):

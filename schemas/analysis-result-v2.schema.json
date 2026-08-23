@@ -162,7 +162,7 @@
     },
     "PublicEvidenceSummary": {
       "additionalProperties": false,
-      "description": "Resumo agregado de evidência — só campos da allowlist.",
+      "description": "Resumo agregado de evidência — só campos da allowlist.\n\n**Sem `excerpt`, e de propósito.** O trecho observado entrou no v3 e SÓ no v3: este modelo é\ncompartilhado pelo v1 e pelo v2, os dois com `additionalProperties: false` no schema\npublicado, e campo novo ali é quebra para quem valida. Ver `PublicEvidenceSummaryV3`.",
       "properties": {
         "id": {
           "title": "Id",

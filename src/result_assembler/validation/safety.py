@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import re
 
-from result_assembler.contracts.facts import AnalysisFacts
+from result_assembler.contracts.facts import MAX_EXCERPT_LEN, AnalysisFacts
 from result_assembler.errors import UnsafeEvidence
 
 #: Limite de tamanho: rótulo é rótulo. Texto longo é conteúdo disfarçado de rótulo.
@@ -93,6 +93,17 @@ def validate_evidence_safety(facts: AnalysisFacts) -> None:
         _varrer(ev.kind, f"evidence[{i}].kind")
         if ev.label is not None:
             _varrer(ev.label, f"evidence[{i}].label")
+        # O TRECHO, com teto próprio.
+        #
+        # Ele carrega texto de conversa por decisão do owner, sobre uma premissa que mudou: o
+        # Privacy Gate é porta única e o clearance é garantido por constraint. Ver
+        # `FactEvidenceSummary`.
+        #
+        # A varredura continua valendo, e cobre outra coisa: o Gate protege contra o dado do
+        # CLIENTE; isto protege contra o que o NOSSO lado poderia colar aqui — um caminho, uma
+        # URL, um id de execução. As duas camadas olham para lados diferentes.
+        if ev.excerpt is not None:
+            _varrer(ev.excerpt, f"evidence[{i}].excerpt", teto=MAX_EXCERPT_LEN)
     for i, rec in enumerate(facts.recommendations):
         _varrer(rec.id, f"recommendations[{i}].id")
         # O título da recomendação é texto público exibido ao usuário — mesma régua.
