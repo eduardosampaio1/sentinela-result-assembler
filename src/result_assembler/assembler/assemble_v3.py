@@ -62,6 +62,7 @@ from result_assembler.contracts.result_v3 import (
 )
 from result_assembler.errors import UnknownIndicator
 from result_assembler.validation.invariants import validate_facts
+from result_assembler.validation.safety import validate_evidence_safety
 from result_assembler.registry.argos_catalog import ARGOS_CATALOG_VERSION, POR_ID, Familia
 from result_assembler.registry.indicators import (
     INDICATOR_REGISTRY_VERSION_V3,
@@ -438,6 +439,15 @@ def assemble_v3(facts: AnalysisFacts) -> AssemblyV3Outcome:
     v3 sem esses campos, e isso é a resposta correta: ninguém os produziu.
     """
     validate_facts(facts)
+    # A REDE DE CONTEUDO, e ela NAO estava ligada aqui.
+    #
+    # `assemble` (v1) e `assemble_v2` chamam `validate_evidence_safety` desde que ela existe. O
+    # v3 — que e o caminho de producao — chamava so `validate_facts`, que verifica INVARIANTES
+    # (referencia de evidencia, coerencia de familia), nao CONTEUDO.
+    #
+    # Resultado: a unica montagem viva era a unica sem varredura. A rede existia, tinha teste,
+    # e nao cobria nada do que sai.
+    validate_evidence_safety(facts)
     min_samples = _min_samples_de(facts)
     indicadores = tuple(_publicar_indicador(i) for i in _ordem_canonica(facts))
     dimensoes = tuple(_publicar_dimensao(d) for d in facts.dimensions)

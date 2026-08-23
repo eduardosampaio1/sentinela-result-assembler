@@ -26,6 +26,14 @@ from result_assembler.errors import UnsafeEvidence
 #: Limite de tamanho: rótulo é rótulo. Texto longo é conteúdo disfarçado de rótulo.
 MAX_LABEL_LEN = 120
 
+#: Teto do texto de ALERTA — maior que o de rótulo, e ainda um teto.
+#:
+#: `title` e `detail` são frases escritas pelo MOTOR para uma pessoa ler, e legitimamente passam
+#: de 120 caracteres. O que o teto impede é o que já aconteceu uma vez: uma frase montada
+#: interpolando campo de dado do cliente. Trecho de conversa é longo por natureza, e um teto de
+#: tamanho pega isso sem precisar reconhecer o conteúdo — que nenhum regex reconhece.
+MAX_ALERT_TEXT_LEN = 400
+
 _PADROES_PROIBIDOS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("caminho absoluto", re.compile(r"(^|[\s\"'(])(/[a-zA-Z0-9._-]+){2,}|[A-Za-z]:\\")),
     ("url", re.compile(r"\b[a-z][a-z0-9+.-]*://", re.IGNORECASE)),
@@ -56,10 +64,10 @@ _PADROES_PROIBIDOS: tuple[tuple[str, re.Pattern[str]], ...] = (
 )
 
 
-def _varrer(texto: str, onde: str) -> None:
-    if len(texto) > MAX_LABEL_LEN:
+def _varrer(texto: str, onde: str, *, teto: int = MAX_LABEL_LEN) -> None:
+    if len(texto) > teto:
         raise UnsafeEvidence(
-            f"texto excede {MAX_LABEL_LEN} caracteres — rótulo não carrega conteúdo",
+            f"texto excede {teto} caracteres — rótulo não carrega conteúdo",
             location=onde,
         )
     for nome, padrao in _PADROES_PROIBIDOS:
@@ -71,6 +79,9 @@ def _varrer(texto: str, onde: str) -> None:
 
 def validate_evidence_safety(facts: AnalysisFacts) -> None:
     """Recusa qualquer TEXTO PUBLICADO que carregue conteúdo não publicável.
+
+    Cobre evidência, recomendação e **alerta**. O nome ficou `evidence` por herança; o alcance
+    é todo texto livre que atravessa para o documento público.
 
     Inclui os **ids** (Codex R3 [1]): `evidence.id`, `recommendation.id` e
     `evidence_refs` atravessam para o resultado público tal como chegaram. Um id é
@@ -90,3 +101,26 @@ def validate_evidence_safety(facts: AnalysisFacts) -> None:
             _varrer(rec.category, f"recommendations[{i}].category")
         for j, ref in enumerate(rec.evidence_refs):
             _varrer(ref, f"recommendations[{i}].evidence_refs[{j}]")
+    # OS ALERTAS, e por que eles entraram só agora.
+    #
+    # Quando esta função nasceu, `alerts` não era publicado — viajava como `[]`, e varrer uma
+    # família que ninguém lê seria gate sobre o vazio. Ela passou a ser publicada, e com ela veio
+    # um vazamento medido: o `hint` de `GENERIC_CROSS_INTENT_REUSE` interpolava
+    # `example_reply`, que é a resposta do assistente do CLIENTE, e virava `alerts[].detail` no
+    # documento público.
+    #
+    # A origem foi corrigida no motor. Isto aqui é a rede: a próxima frase montada com campo de
+    # dado do cliente não depende de alguém lembrar da regra.
+    #
+    # `getattr` e nao `facts.alerts`: esta funcao recebe os TRES envelopes. `AnalysisFacts` (v1)
+    # nao tem a familia — ela nasceu no v2 —, e `facts.alerts` levanta `AttributeError` no
+    # caminho v1, que continua vivo. O envelope sem a familia nao tem o que varrer, e pular e a
+    # resposta certa: a ausencia da familia nao e um alerta vazio, e nenhum texto sai por ela.
+    for i, al in enumerate(getattr(facts, "alerts", None) or ()):
+        _varrer(al.id, f"alerts[{i}].id")
+        _varrer(al.code, f"alerts[{i}].code")
+        _varrer(al.title, f"alerts[{i}].title", teto=MAX_ALERT_TEXT_LEN)
+        if al.detail is not None:
+            _varrer(al.detail, f"alerts[{i}].detail", teto=MAX_ALERT_TEXT_LEN)
+        for j, ref in enumerate(al.evidence_refs):
+            _varrer(ref, f"alerts[{i}].evidence_refs[{j}]")
