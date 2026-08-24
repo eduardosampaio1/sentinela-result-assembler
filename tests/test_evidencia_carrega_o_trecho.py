@@ -23,7 +23,7 @@ import pytest
 
 from result_assembler import assemble_v3
 from result_assembler.contracts.facts import MAX_EXCERPT_LEN, AnalysisFactsV3
-from result_assembler.errors import UnsafeEvidence
+from pydantic import ValidationError
 
 TRECHO = "Vou verificar isso para voce e retorno em instantes."
 
@@ -74,26 +74,36 @@ def test_evidencia_SEM_trecho_continua_valendo() -> None:
     assert fora.public_result.evidence[0].excerpt is None
 
 
-def test_trecho_LONGO_e_recusado() -> None:
+def test_trecho_LONGO_nao_atravessa() -> None:
     """Um excerto é um excerto.
 
     Publicar a conversa inteira seria republicar o dataset pelo documento de resultado — que é
     outra coisa, e tem outra porta (o export, com retenção e auditoria próprias).
+
+    A porta é a do CONTRATO: `max_length` em `FactEvidenceSummary.excerpt`, o que faz a recusa
+    acontecer no `model_validate` — antes de a montagem começar. A versão anterior deste caso
+    escrevia `pytest.raises(Exception)` com `assert erro.value is not None`, que é tautologia:
+    qualquer exceção pintava verde, inclusive um `TypeError` de assinatura errada.
     """
-    with pytest.raises(Exception) as erro:
-        assemble_v3(_fatos({**EVIDENCIA, "excerpt": "x" * (MAX_EXCERPT_LEN + 1)}))
-    # Pode ser recusa do contrato (`max_length`) ou da varredura — as duas são a resposta certa,
-    # e o caso não escolhe qual, porque a garantia é "não passa", não "por qual porta".
-    assert erro.value is not None
+    with pytest.raises(ValidationError):
+        _fatos({**EVIDENCIA, "excerpt": "x" * (MAX_EXCERPT_LEN + 1)})
 
 
-def test_trecho_com_CREDENCIAL_e_recusado() -> None:
+def test_trecho_com_CREDENCIAL_e_DESCARTADO_e_o_documento_sai() -> None:
     """O Gate cobre o dado do CLIENTE; a varredura cobre o que o NOSSO lado colaria aqui.
 
     As duas camadas olham para lados diferentes, e por isso nenhuma substitui a outra.
+
+    **A resposta mudou na revisão da Regra #16**: era recusar a montagem, e recusar publica NADA
+    — nem v3, nem v1. Como o conteúdo do trecho é, por decisão, do cliente, derrubar a análise por
+    uma palavra numa conversa de suporte é a resposta errada. Descartar o trecho dá a mesma
+    garantia (o conteúdo não sai) sem custar o resultado. Ver
+    `test_trecho_degrada_em_vez_de_derrubar.py`.
     """
-    with pytest.raises(UnsafeEvidence):
-        assemble_v3(_fatos({**EVIDENCIA, "excerpt": "Authorization: Bearer sk-live-x"}))
+    fora = assemble_v3(_fatos({**EVIDENCIA, "excerpt": "Authorization: Bearer sk-live-x"}))
+
+    assert fora.public_result.evidence is not None, "o documento tem que sair"
+    assert fora.public_result.evidence[0].excerpt is None, "o conteudo suspeito nao pode sair"
 
 
 def test_o_v2_NAO_ganhou_o_campo() -> None:

@@ -43,7 +43,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from result_assembler.contracts.facts import Availability, Reason
+from result_assembler.contracts.facts import MAX_EXCERPT_LEN, Availability, Reason
 from result_assembler.contracts.result import (
     IndicatorState,
     Partiality,
@@ -468,7 +468,8 @@ class PublicEvidenceSummaryV3(ResultV3Model):
     tinham chamador de producao (esta no cabecalho do `gate.py` da Ingestao). Hoje o Privacy
     Gate e porta unica, detecta sete classes fechadas — identificador direto, quase-identificador,
     atributo sensivel, credencial, segredo, identificador financeiro e de rede —, e o clearance
-    e garantido por `check (privacy_clearance = 'passed')` no banco.
+    e garantido por uma restricao no banco da Ingestao (o nome dela fica no comentario abaixo,
+    fora da docstring: docstring vira `description` no schema publicado).
 
     A allowlist continua sendo a defesa: campo novo no fato nao chega aqui sem alguem escrever.
     """
@@ -479,7 +480,14 @@ class PublicEvidenceSummaryV3(ResultV3Model):
     label: str | None
     #: O trecho observado, sanitizado na origem e varrido na saida. `None` quando a evidencia
     #: nao e textual — e isso e comum, nem toda evidencia e texto.
-    excerpt: str | None = None
+    excerpt: str | None = Field(default=None, max_length=MAX_EXCERPT_LEN)
+    """O teto e DECLARADO aqui, e nao so no contrato de entrada.
+
+    `analysis-facts-v3` publicava `maxLength: 400` e `analysis-result-v3` nao publicava teto
+    nenhum: o contrato que o FRONT le era mais permissivo que o que o produtor obedece. Quem
+    valida contra o schema publicado, ou dimensiona a tela por ele, nao tinha como saber o
+    limite.
+    """
 
 
 class PublicResultV3(ResultV3Model):

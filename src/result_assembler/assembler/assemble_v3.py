@@ -62,7 +62,10 @@ from result_assembler.contracts.result_v3 import (
 )
 from result_assembler.errors import UnknownIndicator
 from result_assembler.validation.invariants import validate_facts
-from result_assembler.validation.safety import validate_evidence_safety
+from result_assembler.validation.safety import (
+    trecho_publicavel,
+    validate_evidence_safety,
+)
 from result_assembler.registry.argos_catalog import ARGOS_CATALOG_VERSION, POR_ID, Familia
 from result_assembler.registry.indicators import (
     INDICATOR_REGISTRY_VERSION_V3,
@@ -466,14 +469,19 @@ def assemble_v3(facts: AnalysisFacts) -> AssemblyV3Outcome:
         # O TRECHO atravessa. Campo a campo, e nao por `model_dump`: a allowlist so e allowlist
         # enquanto alguem precisar ESCREVER cada campo aqui. Um campo novo no fato que chegasse
         # ao publico por copia seria a allowlist virando denylist sem ninguem decidir.
+        #
+        # `trecho_publicavel` DESCARTA o trecho suspeito; ela nao levanta. Os outros campos ja
+        # passaram por `validate_evidence_safety`, que RECUSA — a diferenca e de quem e o
+        # conteudo: `id`/`kind`/`label` sao nossos, o trecho e do cliente. Ver a docstring de
+        # `trecho_publicavel`.
         PublicEvidenceSummaryV3(
             id=e.id,
             kind=e.kind,
             observed_count=e.observed_count,
             label=e.label,
-            excerpt=e.excerpt,
+            excerpt=trecho_publicavel(e.excerpt, f"evidence[{i}].excerpt"),
         )
-        for e in facts.evidence
+        for i, e in enumerate(facts.evidence)
     )
 
     publico = PublicResultV3(

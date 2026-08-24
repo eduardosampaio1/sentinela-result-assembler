@@ -93,17 +93,32 @@ def test_titulo_com_credencial_e_recusado() -> None:
         assemble_v3(_fatos({**ALERTA_OK, "title": "Bearer sk-live-vazou"}))
 
 
-def test_o_caminho_v3_CHAMA_a_varredura() -> None:
+def test_o_caminho_v3_CHAMA_a_varredura(monkeypatch: pytest.MonkeyPatch) -> None:
     """O cadeado do cadeado.
 
     Os três casos acima passariam iguais se `assemble_v3` deixasse de chamar
     `validate_evidence_safety` — nenhum deles olha a chamada, só o efeito. Se o efeito sumisse,
     eles falhariam; mas eles falhariam DEPOIS, e a pergunta "por quê" custaria uma investigação.
     Este caso responde direto.
-    """
-    import inspect
 
+    **Ele media a PROSA e agora mede o FATO.** A versão anterior fazia `inspect.getsource` e
+    procurava a substring `"validate_evidence_safety(facts)"` — o que deixa
+    `# validate_evidence_safety(facts)`, comentado, passando verde: a substring continua lá.
+    Substituir o símbolo no módulo e conferir que ele foi chamado custa as mesmas linhas e não
+    tem como ser satisfeito por um comentário.
+    """
     from result_assembler.assembler import assemble_v3 as modulo
 
-    fonte = inspect.getsource(modulo.assemble_v3)
-    assert "validate_evidence_safety(facts)" in fonte
+    chamadas: list[object] = []
+    original = modulo.validate_evidence_safety
+
+    def espiao(facts: object) -> None:
+        chamadas.append(facts)
+        original(facts)
+
+    monkeypatch.setattr(modulo, "validate_evidence_safety", espiao)
+
+    fatos = _fatos(ALERTA_OK)
+    modulo.assemble_v3(fatos)
+
+    assert chamadas == [fatos], "assemble_v3 não chamou validate_evidence_safety"

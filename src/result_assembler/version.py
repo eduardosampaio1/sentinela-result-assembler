@@ -103,7 +103,37 @@ from __future__ import annotations
 #: Junto: `assemble_v3` passou a chamar `validate_evidence_safety`, que ele NUNCA chamava. O v1
 #: e o v2 chamavam; o caminho de producao era o unico sem varredura de conteudo. E a varredura
 #: passou a cobrir `alerts`, por onde um trecho de conversa vazava sem contrato nem teto.
-ASSEMBLER_VERSION = "0.9.0"
+ASSEMBLER_VERSION = "0.9.1"
+
+# ⚠️ 0.9.1 — O QUE MUDOU, e por que e uma versao e nao um patch silencioso.
+#
+# A 0.9.0 ligou `validate_evidence_safety` no caminho de producao (`assemble_v3`) e, no MESMO
+# passo, comecou a alimentar a familia `evidence` com texto de conversa. As duas coisas juntas
+# criaram um defeito que a revisao da Regra #16 pegou: a rede foi escrita para ROTULO de maquina
+# e passou a julgar PROSA DE CLIENTE.
+#
+# Medido — tres respostas de suporte normais derrubavam a analise INTEIRA (409 nao-retryable,
+# nenhum documento, nem v3 nem v1):
+#
+#     "Voce pode alterar a senha no aplicativo"       -> padrao `credencial`
+#     "Para redefinir sua senha, acesse https://..."  -> padrao `url`
+#     "Please select your plan from the list below"   -> padrao `sql/tabela`
+#
+# 0.9.1 separa as duas responsabilidades:
+#
+#   * campos NOSSOS (`id`, `kind`, `label`, `evidence_refs`, texto de alerta, `intent_id`,
+#     `severity_reason`, `affected_intents`) continuam RECUSANDO — defeito nosso nao publica;
+#   * o `excerpt`, cujo conteudo e do CLIENTE por decisao, e DESCARTADO por `trecho_publicavel`
+#     e o documento sai. Mesma garantia de privacidade, sem custar o resultado.
+#
+# Junto: `affected_intents`, `intent_id` e `severity_reason` entraram na varredura (eram
+# publicados sem rede); `PublicEvidenceSummaryV3.excerpt` ganhou `max_length` para o teto
+# atravessar ao schema PUBLICADO; e o nome da tabela interna saiu das docstrings que viram
+# `description` no schema.
+#
+# COMPATIBILIDADE: nao ha mudanca de forma. Um produtor 0.9.0 funciona contra 0.9.1 e vice-versa.
+# A ordem de deploy rigida da 0.9.0 (montador ANTES do produtor) continua valendo para quem ainda
+# estiver em 0.8.0.
 
 #: Contrato de ENTRADA (interno, vindo do domínio analítico).
 FACTS_SCHEMA_VERSION = "analysis-facts-v1"

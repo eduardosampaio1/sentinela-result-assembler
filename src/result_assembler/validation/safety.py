@@ -18,10 +18,13 @@ sistema é onde vazamento acontece.
 
 from __future__ import annotations
 
+import logging
 import re
 
 from result_assembler.contracts.facts import MAX_EXCERPT_LEN, AnalysisFacts
 from result_assembler.errors import UnsafeEvidence
+
+LOGGER = logging.getLogger(__name__)
 
 #: Limite de tamanho: rótulo é rótulo. Texto longo é conteúdo disfarçado de rótulo.
 MAX_LABEL_LEN = 120
@@ -34,24 +37,86 @@ MAX_LABEL_LEN = 120
 #: tamanho pega isso sem precisar reconhecer o conteúdo — que nenhum regex reconhece.
 MAX_ALERT_TEXT_LEN = 400
 
-_PADROES_PROIBIDOS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("caminho absoluto", re.compile(r"(^|[\s\"'(])(/[a-zA-Z0-9._-]+){2,}|[A-Za-z]:\\")),
-    ("url", re.compile(r"\b[a-z][a-z0-9+.-]*://", re.IGNORECASE)),
-    ("credencial", re.compile(r"(?i)\b(bearer|token|secret|password|api[_-]?key|senha)\b")),
-    ("chave privada", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY")),
+#: `NO_TRECHO` marca os padroes que valem TAMBEM para o trecho de conversa.
+#:
+#: A marcacao e ESTRUTURAL, no ponto da definicao, e nao uma lista de nomes em outro lugar. A
+#: primeira versao deste conserto casava por nome — e `"identidade de execução"` tem acento, entao
+#: a comparacao com a lista falhava e o padrao era PULADO. Falhava ABERTA: `worker_id` atravessava
+#: para o documento publico, e nenhum tipo reclamava.
+#:
+#: Com a marca no proprio tuple, "esquecer de sincronizar" deixa de ser possivel: nao ha segunda
+#: lista para desincronizar.
+NO_TRECHO = True
+SO_NO_ROTULO = False
+
+#: Cada entrada: (nome, padrao, vale_no_trecho).
+#:
+#: Os `SO_NO_ROTULO` foram escritos para prosa DO MOTOR num campo de 120 caracteres. O trecho e
+#: prosa DO CLIENTE, e aplicar a mesma regua a ela recusa conversa banal. Medido, nao suposto —
+#: tres respostas de suporte perfeitamente normais derrubavam a analise inteira:
+#:
+#:   "Voce pode alterar a senha no aplicativo"       -> `credencial`, pela PALAVRA "senha"
+#:   "Para redefinir sua senha, acesse https://..."  -> `url`, pelo link de ajuda da empresa
+#:   "Please select your plan from the list below"   -> `sql/tabela`, por "select ... from"
+#:
+#: O Privacy Gate redige VALORES sensiveis; ele nao redige — nem deve — a palavra "senha". Quem
+#: fala de senha com o suporte e o cliente, e e justamente a conversa que a evidencia existe para
+#: mostrar. O arquetipo da resposta generica reusada entre intencoes cai no primeiro caso.
+#:
+#: Os `NO_TRECHO` sao o que NUNCA e prosa de suporte legitima e indica vazamento do NOSSO lado.
+_PADROES_PROIBIDOS: tuple[tuple[str, re.Pattern[str], bool], ...] = (
+    (
+        "caminho absoluto",
+        re.compile(r"(^|[\s\"'(])(/[a-zA-Z0-9._-]+){2,}|[A-Za-z]:\\"),
+        NO_TRECHO,
+    ),
+    ("url", re.compile(r"\b[a-z][a-z0-9+.-]*://", re.IGNORECASE), SO_NO_ROTULO),
+    (
+        # A PALAVRA. Fica fora do trecho: "Voce pode alterar a senha no aplicativo" e a resposta
+        # de suporte mais comum que existe, e era ela que derrubava a analise.
+        "credencial",
+        re.compile(r"(?i)\b(bearer|token|secret|password|api[_-]?key|senha)\b"),
+        SO_NO_ROTULO,
+    ),
+    (
+        # O VALOR. Este vale no trecho, e a distincao e a que importa: o Privacy Gate redige
+        # valores sensiveis do CLIENTE, e este padrao pega o que o NOSSO lado colaria — um header
+        # de autorizacao, um token de portador, um prefixo de fornecedor, um par chave=valor.
+        #
+        # Nenhuma das formas abaixo aparece em prosa de suporte: "Seu token de acesso expirou"
+        # nao tem `:` nem `=` depois de "token", e "redefinir sua senha," tem virgula.
+        "credencial com valor",
+        re.compile(
+            r"(?i)(\bauthorization\s*:"
+            r"|\bbearer\s+[\w\-._~+/]{8,}"
+            r"|\b(sk|pk|ghp|gho|xox[abp])[-_][A-Za-z0-9\-_]{6,}"
+            r"|\b(api[_-]?key|secret|token|password|senha)\s*[:=]\s*\S)"
+        ),
+        NO_TRECHO,
+    ),
+    ("chave privada", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY"), NO_TRECHO),
     (
         "stack trace",
         re.compile(
             r"(?i)(traceback \(most recent call last\)" r"|\bat [\w.$]+\(.*\.(java|py|ts|js):\d+)"
         ),
+        NO_TRECHO,
     ),
-    ("exceção", re.compile(r"(?i)\b\w*(Error|Exception)\b\s*:")),
+    ("exceção", re.compile(r"(?i)\b\w*(Error|Exception)\b\s*:"), NO_TRECHO),
     (
         "sql/tabela",
         re.compile(
             r"(?i)\b(select\s+.*\s+from|insert\s+into|update\s+\w+\s+set"
             r"|from\s+orchestrator_\w+)\b"
         ),
+        SO_NO_ROTULO,
+    ),
+    (
+        # SQL contra as NOSSAS tabelas, separado do `select ... from` generico que casa com
+        # ingles comum. O generico fica fora do trecho; este nao.
+        "tabela nossa",
+        re.compile(r"(?i)\bfrom\s+orchestrator_\w+\b"),
+        NO_TRECHO,
     ),
     (
         "identidade de execução",
@@ -59,9 +124,42 @@ _PADROES_PROIBIDOS: tuple[tuple[str, re.Pattern[str]], ...] = (
             r"(?i)\b(worker[_-]?id|engine[_-]?version|lease[_-]?token"
             r"|attempt[_-]?id|job[_-]?id|instance[_-]?id)\b"
         ),
+        NO_TRECHO,
     ),
-    ("chave de objeto", re.compile(r"(?i)\b(s3|minio|bucket|object[_-]?key)\b")),
+    ("chave de objeto", re.compile(r"(?i)\b(s3|minio|bucket|object[_-]?key)\b"), NO_TRECHO),
 )
+
+
+
+def trecho_publicavel(texto: str | None, onde: str) -> str | None:
+    """O trecho, ou `None` quando ele nao pode ser publicado. **Nunca levanta.**
+
+    A diferenca de comportamento em relacao a `_varrer` e deliberada, e e o achado que a revisao
+    da Regra #16 pegou: recusar e a resposta certa para `id`, `kind` e `label`, que sao NOSSOS —
+    um id com `Bearer sk-live-...` e um defeito nosso e o documento nao deve sair. Para o trecho e
+    a resposta errada: o conteudo dele e, por decisao do owner, do CLIENTE. Recusar a montagem
+    publica NADA — nem v3, nem v1 — por causa de uma palavra numa conversa de suporte.
+
+    Descartar o trecho e estritamente melhor nas duas pontas: nunca publica o conteudo suspeito
+    (mesma garantia da recusa) e nao derruba o resultado (o que a recusa fazia).
+
+    LIMITACAO ESCRITA: o descarte fica no LOG, nao no documento. `PublicEvidenceSummaryV3` nao tem
+    campo de motivo, e cria-lo e mais uma versao de contrato com ordem de deploy. Depois do
+    estreitamento acima, o descarte so dispara em vazamento NOSSO — que e defeito, nao rotina —,
+    e por isso o log e proporcional. Se virar rotina, o campo passa a valer.
+    """
+    if texto is None:
+        return None
+    if len(texto) > MAX_EXCERPT_LEN:
+        LOGGER.warning("trecho descartado em %s: excede %d caracteres", onde, MAX_EXCERPT_LEN)
+        return None
+    for nome, padrao, vale_no_trecho in _PADROES_PROIBIDOS:
+        if vale_no_trecho and padrao.search(texto):
+            # Nunca ecoa o texto: ecoar no log copiaria para o log exatamente o que se quer
+            # manter fora do documento.
+            LOGGER.warning("trecho descartado em %s: conteudo proibido (%s)", onde, nome)
+            return None
+    return texto
 
 
 def _varrer(texto: str, onde: str, *, teto: int = MAX_LABEL_LEN) -> None:
@@ -70,7 +168,7 @@ def _varrer(texto: str, onde: str, *, teto: int = MAX_LABEL_LEN) -> None:
             f"texto excede {teto} caracteres — rótulo não carrega conteúdo",
             location=onde,
         )
-    for nome, padrao in _PADROES_PROIBIDOS:
+    for nome, padrao, _ in _PADROES_PROIBIDOS:
         if padrao.search(texto):
             # A mensagem diz o TIPO do problema e ONDE. Nunca ecoa o trecho: ecoar aqui
             # copiaria o segredo para o log, que é exatamente o que se quer evitar.
@@ -80,8 +178,14 @@ def _varrer(texto: str, onde: str, *, teto: int = MAX_LABEL_LEN) -> None:
 def validate_evidence_safety(facts: AnalysisFacts) -> None:
     """Recusa qualquer TEXTO PUBLICADO que carregue conteúdo não publicável.
 
-    Cobre evidência, recomendação e **alerta**. O nome ficou `evidence` por herança; o alcance
-    é todo texto livre que atravessa para o documento público.
+    Cobre evidência, recomendação, **alerta** e **intenção**. O nome ficou `evidence` por
+    herança.
+
+    **O que ela NÃO cobre, escrito em vez de subentendido:** `issues[]` e
+    `executive_summary.text` são publicáveis pelo contrato e não têm produtor hoje — varrê-los
+    seria gate sobre o vazio. `executive_summary.text` não tem sequer teto de tamanho. No dia em
+    que ganharem produtor, entram aqui **antes** de a fiação subir; é a mesma dívida que os
+    alertas pagaram: a família passou a ser publicada e a rede não veio junto.
 
     Inclui os **ids** (Codex R3 [1]): `evidence.id`, `recommendation.id` e
     `evidence_refs` atravessam para o resultado público tal como chegaram. Um id é
@@ -93,17 +197,16 @@ def validate_evidence_safety(facts: AnalysisFacts) -> None:
         _varrer(ev.kind, f"evidence[{i}].kind")
         if ev.label is not None:
             _varrer(ev.label, f"evidence[{i}].label")
-        # O TRECHO, com teto próprio.
+        # O TRECHO **nao e varrido aqui**, e a ausencia e o conserto.
         #
         # Ele carrega texto de conversa por decisão do owner, sobre uma premissa que mudou: o
         # Privacy Gate é porta única e o clearance é garantido por constraint. Ver
         # `FactEvidenceSummary`.
         #
-        # A varredura continua valendo, e cobre outra coisa: o Gate protege contra o dado do
-        # CLIENTE; isto protege contra o que o NOSSO lado poderia colar aqui — um caminho, uma
-        # URL, um id de execução. As duas camadas olham para lados diferentes.
-        if ev.excerpt is not None:
-            _varrer(ev.excerpt, f"evidence[{i}].excerpt", teto=MAX_EXCERPT_LEN)
+        # A protecao continua existindo — em `trecho_publicavel`, chamada na MONTAGEM, que
+        # DESCARTA o trecho em vez de recusar o documento. Levantar aqui derrubava a analise
+        # inteira por uma palavra numa conversa de suporte, e derrubava tambem o v1, que nem
+        # publica o trecho. Ver a docstring de `trecho_publicavel`.
     for i, rec in enumerate(facts.recommendations):
         _varrer(rec.id, f"recommendations[{i}].id")
         # O título da recomendação é texto público exibido ao usuário — mesma régua.
@@ -135,3 +238,16 @@ def validate_evidence_safety(facts: AnalysisFacts) -> None:
             _varrer(al.detail, f"alerts[{i}].detail", teto=MAX_ALERT_TEXT_LEN)
         for j, ref in enumerate(al.evidence_refs):
             _varrer(ref, f"alerts[{i}].evidence_refs[{j}]")
+        # `affected_intents` e a MESMA string que alimenta o `hint` do motor — e o `hint` vira
+        # `detail`, que e varrido. O mesmo texto estava fail-closed num campo e livre no vizinho.
+        for j, it in enumerate(al.affected_intents):
+            _varrer(it, f"alerts[{i}].affected_intents[{j}]")
+    # A FAMILIA `intents`, pelo mesmo motivo.
+    #
+    # `intent_id` e o nome da intencao vindo do dataset do CLIENTE — texto livre quando o cliente
+    # mapeia uma coluna livre. `severity_reason` e frase do motor. Os dois sao publicados e
+    # nenhum passava por aqui.
+    for i, it in enumerate(getattr(facts, "intents", None) or ()):
+        _varrer(it.intent_id, f"intents[{i}].intent_id")
+        for j, motivo in enumerate(it.severity_reason or ()):
+            _varrer(motivo, f"intents[{i}].severity_reason[{j}]", teto=MAX_ALERT_TEXT_LEN)

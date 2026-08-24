@@ -236,8 +236,8 @@ class FactEvidenceSummary(FactsModel):
     * ele detecta e transforma sete classes fechadas: identificador direto (CPF, telefone,
       e-mail, nome completo, RG), quase-identificador, atributo sensível, credencial, segredo,
       identificador financeiro e identificador de rede;
-    * o clearance é **estruturalmente garantido**: `orchestrator_ingestion_inbox` tem
-      `check (privacy_clearance = 'passed')`. A existência da linha É a prova;
+    * o clearance é **estruturalmente garantido** por uma restrição no banco da Ingestão: uma
+      linha só existe depois de aprovada, e a existência da linha É a prova;
     * cada dataset carrega `privacy_policy_version` e um manifesto com `values_redacted_count`.
 
     ## O que continua valendo
@@ -246,6 +246,18 @@ class FactEvidenceSummary(FactsModel):
     campo a campo — inclusive no trecho. O Gate cobre o dado do cliente; a varredura cobre o que
     o nosso lado poderia colar ali.
     """
+
+    # A restrição citada acima, pelo nome, e por que ela não está na DOCSTRING.
+    #
+    # É `orchestrator_ingestion_inbox` com `check (privacy_clearance = 'passed')`.
+    #
+    # Docstring de modelo vira `description` no JSON Schema, e os schemas viajam para o front —
+    # `test_schema_nao_diverge_da_origem` diz isso em voz alta. O nome da tabela e a constraint
+    # estavam publicados em `analysis-facts-v1`, `v2` e `v3`. A varredura deste mesmo produto
+    # trata `from orchestrator_\w+` como padrão proibido: a justificativa da decisão publicava o
+    # tipo exato de coisa que a decisão protege.
+    #
+    # Comentário não é lido pelo gerador. O raciocínio fica; o nome interno não sai.
 
     id: str = Field(min_length=1)
     kind: str = Field(min_length=1)
