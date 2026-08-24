@@ -243,6 +243,35 @@ def _varrer(texto: str, onde: str, *, teto: int = MAX_LABEL_LEN) -> None:
             raise UnsafeEvidence(f"conteúdo proibido detectado ({nome})", location=onde)
 
 
+def _varrer_do_cliente(texto: str, onde: str, *, teto: int = MAX_LABEL_LEN) -> None:
+    """Varredura para identificador que o CLIENTE nomeia. So os padroes `NO_TRECHO`.
+
+    `intent_id` e `affected_intents` sao a TAXONOMIA DO CLIENTE — ele escolhe os nomes, e eles
+    entram no dataset pela coluna que ele mapeou. Aplicar a regua do rotulo de maquina a eles
+    repete, num campo novo, o defeito que a 0.9.1 consertou no trecho.
+
+    Medido em homologacao com massa real: uma intencao chamada **`senha`** — recuperacao de
+    senha, das mais comuns que existem em suporte — batia no padrao `credencial` e derrubava a
+    ANALISE INTEIRA:
+
+        MONTAGEM RECUSADA: conteudo proibido detectado (credencial) [em intents[10].intent_id]
+
+    O defeito nasceu no proprio conserto do alcance da varredura: `intent_id` entrou junto com
+    `severity_reason`, que e prosa do MOTOR e continua com a regua cheia. Os dois estavam na
+    mesma linha do achado e nao tinham a mesma origem.
+
+    **Por que RECUSA e nao descarta**, ao contrario do trecho: `intent_id` e CHAVE. Ele liga a
+    intencao aos alertas (`affected_intents`) e ao rotulo da evidencia. Descartar quebraria a
+    integridade referencial do documento; publicar um vazamento nosso e inaceitavel. Recusar e a
+    unica saida coerente — e, com a regua estreita, so dispara em vazamento NOSSO, que e defeito.
+    """
+    if len(texto) > teto:
+        raise UnsafeEvidence(f"texto excede {teto} caracteres", location=onde)
+    for nome, padrao, vale_no_trecho in _PADROES_PROIBIDOS:
+        if vale_no_trecho and padrao.search(texto):
+            raise UnsafeEvidence(f"conteúdo proibido detectado ({nome})", location=onde)
+
+
 def validate_evidence_safety(facts: AnalysisFacts) -> None:
     """Recusa qualquer TEXTO PUBLICADO que carregue conteúdo não publicável.
 
@@ -308,14 +337,19 @@ def validate_evidence_safety(facts: AnalysisFacts) -> None:
             _varrer(ref, f"alerts[{i}].evidence_refs[{j}]")
         # `affected_intents` e a MESMA string que alimenta o `hint` do motor — e o `hint` vira
         # `detail`, que e varrido. O mesmo texto estava fail-closed num campo e livre no vizinho.
+        #
+        # Regua DO CLIENTE: sao nomes de intencao, escolhidos por ele. Ver `_varrer_do_cliente`.
         for j, it in enumerate(al.affected_intents):
-            _varrer(it, f"alerts[{i}].affected_intents[{j}]")
+            _varrer_do_cliente(it, f"alerts[{i}].affected_intents[{j}]")
     # A FAMILIA `intents`, pelo mesmo motivo.
     #
     # `intent_id` e o nome da intencao vindo do dataset do CLIENTE — texto livre quando o cliente
     # mapeia uma coluna livre. `severity_reason` e frase do motor. Os dois sao publicados e
     # nenhum passava por aqui.
     for i, it in enumerate(getattr(facts, "intents", None) or ()):
-        _varrer(it.intent_id, f"intents[{i}].intent_id")
+        # `intent_id` e do CLIENTE; `severity_reason` logo abaixo e prosa do MOTOR. Os dois
+        # entraram na varredura pelo mesmo achado e NAO tem a mesma origem — por isso reguas
+        # diferentes. Ver `_varrer_do_cliente`.
+        _varrer_do_cliente(it.intent_id, f"intents[{i}].intent_id")
         for j, motivo in enumerate(it.severity_reason or ()):
             _varrer(motivo, f"intents[{i}].severity_reason[{j}]", teto=MAX_ALERT_TEXT_LEN)

@@ -103,7 +103,27 @@ from __future__ import annotations
 #: Junto: `assemble_v3` passou a chamar `validate_evidence_safety`, que ele NUNCA chamava. O v1
 #: e o v2 chamavam; o caminho de producao era o unico sem varredura de conteudo. E a varredura
 #: passou a cobrir `alerts`, por onde um trecho de conversa vazava sem contrato nem teto.
-ASSEMBLER_VERSION = "0.9.2"
+ASSEMBLER_VERSION = "0.9.3"
+
+# ⚠️ 0.9.3 — `intent_id` e `affected_intents` sao texto DO CLIENTE, e a regua deles mudou.
+#
+# A 0.9.2 fechou um achado de alcance da varredura: `intent_id`, `severity_reason` e
+# `affected_intents` eram publicados sem rede. Eles entraram JUNTOS, com a regua do rotulo de
+# maquina — e nao tem a mesma origem.
+#
+# Medido em homologacao com massa real de cliente: uma intencao chamada **`senha`** —
+# recuperacao de senha, das mais comuns que existem em suporte — batia no padrao `credencial`:
+#
+#     MONTAGEM RECUSADA: conteudo proibido (credencial) [em intents[10].intent_id]
+#
+# E o MESMO defeito que a 0.9.1 consertou no trecho, repetido num campo que o proprio conserto
+# adicionou. `intent_id` e a taxonomia do cliente: ele escolhe os nomes.
+#
+# Agora `_varrer_do_cliente` aplica so os padroes `NO_TRECHO` (vazamento NOSSO) aos campos de
+# origem do cliente. `severity_reason` e prosa do MOTOR e mantem a regua cheia.
+#
+# RECUSA, e nao descarta como o trecho: `intent_id` e CHAVE — liga a intencao aos alertas e ao
+# rotulo da evidencia. Descartar quebraria a integridade referencial do documento.
 
 # ⚠️ 0.9.2 — o que a REVISAO INDEPENDENTE achou no proprio conserto da 0.9.1.
 #
