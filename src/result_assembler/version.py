@@ -84,7 +84,26 @@ from __future__ import annotations
 #: pintaria verde ao lado de um cracha de atencao, sem nada explicando. TRES estados
 #: (`None` / `()` / preenchido), porque `severity=WARN` com `[]` so pode vir de produtor
 #: antigo, e a tela precisa poder dizer "motivo nao publicado".
-ASSEMBLER_VERSION = "0.8.0"
+#: **0.9.0** — `PublicEvidenceSummaryV3.excerpt` e `FactEvidenceSummary.excerpt`: a evidencia
+#: passa a carregar o TRECHO observado.
+#:
+#: Decisao do owner. A regra que a proibia — *"nao carrega texto livre de conversa"* — cai
+#: sobre uma premissa que mudou: quando ela foi escrita, oito das onze pecas de privacidade da
+#: Ingestao nao tinham chamador de producao. Hoje o Privacy Gate e porta unica, cobre sete
+#: classes fechadas de dado sensivel, e o clearance e garantido por
+#: `check (privacy_clearance = 'passed')` no banco.
+#:
+#: ⚠️ **ORDEM DE DEPLOY.** `FactsModel` e `extra="forbid"`: um produtor que envia `excerpt`
+#: contra a 0.8.0 faz a validacao do envelope FALHAR, e a analise sai sem resultado. Esta
+#: versao entra ANTES do produtor que a usa, nunca depois.
+#:
+#: O modelo do v3 e proprio (`PublicEvidenceSummaryV3`). O compartilhado serve v1 e v2, que tem
+#: `additionalProperties: false` no schema publicado — campo novo ali e quebra para quem valida.
+#:
+#: Junto: `assemble_v3` passou a chamar `validate_evidence_safety`, que ele NUNCA chamava. O v1
+#: e o v2 chamavam; o caminho de producao era o unico sem varredura de conteudo. E a varredura
+#: passou a cobrir `alerts`, por onde um trecho de conversa vazava sem contrato nem teto.
+ASSEMBLER_VERSION = "0.9.0"
 
 #: Contrato de ENTRADA (interno, vindo do domínio analítico).
 FACTS_SCHEMA_VERSION = "analysis-facts-v1"
