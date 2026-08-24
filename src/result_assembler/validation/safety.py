@@ -70,7 +70,46 @@ _PADROES_PROIBIDOS: tuple[tuple[str, re.Pattern[str], bool], ...] = (
         re.compile(r"(^|[\s\"'(])(/[a-zA-Z0-9._-]+){2,}|[A-Za-z]:\\"),
         NO_TRECHO,
     ),
-    ("url", re.compile(r"\b[a-z][a-z0-9+.-]*://", re.IGNORECASE), SO_NO_ROTULO),
+    (
+        # A URL GENERICA fica fora do trecho: um link de ajuda da empresa e a coisa mais comum
+        # numa resposta de suporte, e era ele que derrubava a analise.
+        "url",
+        re.compile(r"\b[a-z][a-z0-9+.-]*://", re.IGNORECASE),
+        SO_NO_ROTULO,
+    ),
+    (
+        # URL COM CREDENCIAL (`scheme://usuario:senha@host`). Esta vale no trecho, e a distincao
+        # e a mesma da palavra vs. valor: `https://ajuda.acme.com/conta` e prosa de suporte;
+        # `https://user:pass@interno/painel` nunca e.
+        #
+        # Achado da revisao independente. Ao tirar `url` do trecho eu tirei junto a deteccao de
+        # string de conexao, que era o unico padrao que a pegava — um corte largo demais.
+        "credencial em url",
+        re.compile(r"\b[a-z][a-z0-9+.-]*://[^/\s:@]+:[^/\s@]+@", re.IGNORECASE),
+        NO_TRECHO,
+    ),
+    (
+        # DSN DE INFRAESTRUTURA. Nenhum destes esquemas aparece em conversa de cliente, com ou
+        # sem credencial embutida: o host sozinho ja e topologia interna.
+        "dsn de infraestrutura",
+        re.compile(
+            r"\b(postgres(ql)?|mysql|mariadb|mongodb(\+srv)?|redis(s)?|amqp(s)?|kafka"
+            r"|mssql|oracle|clickhouse|elasticsearch|memcached|ldap(s)?)://",
+            re.IGNORECASE,
+        ),
+        NO_TRECHO,
+    ),
+    (
+        # VARIAVEL DE AMBIENTE SENSIVEL (`DATABASE_URL=...`, `API_TOKEN=...`). O `credencial com
+        # valor` cobria `token=`/`senha=` em minusculas; a forma que vaza de verdade e a do
+        # ambiente, em CAIXA ALTA com sufixo.
+        "variavel de ambiente",
+        re.compile(
+            r"\b[A-Z][A-Z0-9_]*_(URL|URI|DSN|KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIALS?)"
+            r"\s*[:=]"
+        ),
+        NO_TRECHO,
+    ),
     (
         # A PALAVRA. Fica fora do trecho: "Voce pode alterar a senha no aplicativo" e a resposta
         # de suporte mais comum que existe, e era ela que derrubava a analise.
@@ -148,7 +187,36 @@ def trecho_publicavel(texto: str | None, onde: str) -> str | None:
     estreitamento acima, o descarte so dispara em vazamento NOSSO — que e defeito, nao rotina —,
     e por isso o log e proporcional. Se virar rotina, o campo passa a valer.
     """
+    try:
+        return _trecho_publicavel(texto, onde)
+    except Exception:
+        # A promessa "NUNCA levanta" e absoluta, e sem isto ela dependia de o argumento se
+        # comportar. Uma subclasse de `str` com `strip` ou `__len__` hostil passava pela guarda
+        # de tipo e levantava dentro do `re` — achado da revisao independente.
+        #
+        # Inalcancavel pelo caminho contratado, e e justamente por isso que a excecao aqui
+        # significa "aconteceu algo que ninguem previu": descartar o trecho e a resposta segura,
+        # e derrubar o documento seria repetir o defeito que esta funcao existe para consertar.
+        LOGGER.warning("trecho descartado em %s: falha inesperada ao avaliar", onde)
+        return None
+
+
+def _trecho_publicavel(texto: str | None, onde: str) -> str | None:
     if texto is None:
+        return None
+    if not isinstance(texto, str):
+        # A promessa "nunca levanta" e forte, e sem esta guarda ela era FALSA: `bytes`, `int` e
+        # `list` levantavam `TypeError` dentro do `re`. Inalcancavel pelo caminho contratado
+        # (`FactEvidenceSummary.excerpt` e `str | None` e o pydantic valida antes), e a funcao e
+        # exportada — quem a chamar de fora nao tem essa garantia.
+        #
+        # Descartar e a resposta certa tambem aqui: um trecho que nem e texto nao e publicavel, e
+        # derrubar o documento por isso repetiria o defeito que esta funcao existe para consertar.
+        LOGGER.warning("trecho descartado em %s: tipo inesperado (%s)", onde, type(texto).__name__)
+        return None
+    if not texto.strip():
+        # Vazio nao e trecho. Publicar `""` faz a tela desenhar uma citacao em branco, que afirma
+        # "o trecho e este" apontando para nada.
         return None
     if len(texto) > MAX_EXCERPT_LEN:
         LOGGER.warning("trecho descartado em %s: excede %d caracteres", onde, MAX_EXCERPT_LEN)

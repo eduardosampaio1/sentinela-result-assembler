@@ -103,7 +103,27 @@ from __future__ import annotations
 #: Junto: `assemble_v3` passou a chamar `validate_evidence_safety`, que ele NUNCA chamava. O v1
 #: e o v2 chamavam; o caminho de producao era o unico sem varredura de conteudo. E a varredura
 #: passou a cobrir `alerts`, por onde um trecho de conversa vazava sem contrato nem teto.
-ASSEMBLER_VERSION = "0.9.1"
+ASSEMBLER_VERSION = "0.9.2"
+
+# ⚠️ 0.9.2 — o que a REVISAO INDEPENDENTE achou no proprio conserto da 0.9.1.
+#
+# A 0.9.1 tirou o padrao `url` do trecho porque um link de ajuda da empresa e prosa de suporte
+# comum. O corte foi LARGO DEMAIS: junto com o link banal saiu a deteccao de STRING DE CONEXAO,
+# que era o unico padrao que a pegava. Medido:
+#
+#     "DATABASE_URL=postgres://analytics:supersecret@db.internal/prod"  -> publicava
+#     "postgres://user:senha123@db.internal:5432/sentinela"             -> publicava
+#     "redis://:token@redis-homol.railway.internal:6379"                -> publicava
+#
+# Isso e vazamento NOSSO plausivel, nao prosa de cliente. Tres padroes novos, todos `NO_TRECHO`:
+# `credencial em url` (`scheme://user:pass@`), `dsn de infraestrutura` (postgres/redis/amqp/...)
+# e `variavel de ambiente` (`*_URL=`, `*_TOKEN=`, `*_SECRET=`).
+#
+# A contraparte tem caso: `https://ajuda.acme.com/conta` e `www.exemplo.com/ajuda` continuam
+# atravessando. Sem os dois lados, "consertar" vira barrar tudo de novo.
+#
+# Junto: `trecho_publicavel` passou a cumprir a promessa "NUNCA levanta" de forma absoluta — uma
+# SUBCLASSE hostil de `str` passava pela guarda de tipo e explodia dentro do `re`.
 
 # ⚠️ 0.9.1 — O QUE MUDOU, e por que e uma versao e nao um patch silencioso.
 #

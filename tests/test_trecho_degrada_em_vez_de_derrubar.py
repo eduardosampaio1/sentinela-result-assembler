@@ -46,6 +46,11 @@ CONVERSA_BANAL = [
     pytest.param("Please select your plan from the list below", id="select-from-em-ingles"),
     pytest.param("Seu token de acesso expirou, faca login de novo", id="palavra-token"),
     pytest.param("Confirmei o horario e enviei o comprovante", id="sem-padrao-nenhum"),
+    # A contraparte dos casos de DSN acima: link SEM credencial continua sendo prosa de suporte,
+    # e barra-lo era o defeito original. Os dois lados precisam de caso, ou "consertar" vira
+    # barrar tudo de novo.
+    pytest.param("Acesse www.exemplo.com/ajuda ou ligue para o SAC", id="site-sem-esquema"),
+    pytest.param("O boleto vence dia 10 e o codigo e 34191790010104351004", id="numero-longo"),
 ]
 
 #: Vazamento do NOSSO lado. Nenhum destes é prosa de suporte legítima.
@@ -56,7 +61,24 @@ VAZAMENTO_NOSSO = [
     pytest.param("baixado do bucket de origem", id="chave-de-objeto"),
     pytest.param("linha lida com select id from orchestrator_jobs", id="tabela-nossa"),
     pytest.param("gravado em /var/lib/sentinela/spool", id="caminho-absoluto"),
+    # Achados da revisao independente: ao tirar `url` do trecho eu tirei junto a deteccao de
+    # STRING DE CONEXAO, que era o unico padrao que a pegava. Um corte largo demais.
+    pytest.param(
+        "DATABASE_URL=postgres://analytics:supersecret@db.internal/prod", id="dsn-em-env"
+    ),
+    pytest.param("postgres://user:senha123@db.internal:5432/sentinela", id="dsn-postgres"),
+    pytest.param("redis://:token@redis-homol.railway.internal:6379", id="dsn-redis"),
+    pytest.param("amqp://guest:guest@broker/vhost", id="dsn-amqp"),
+    pytest.param("https://user:pass@interno.exemplo/painel", id="url-com-credencial"),
+    pytest.param("API_TOKEN=abc123def456", id="variavel-de-ambiente"),
 ]
+
+
+class _StrHostil(str):
+    """Uma `str` que explode ao ser inspecionada. Existe so para o caso de robustez."""
+
+    def strip(self) -> str:  # noqa: D102
+        raise RuntimeError("hostil")
 
 
 def _fatos(evidencia: dict) -> AnalysisFactsV3:
@@ -158,3 +180,44 @@ def test_o_v1_nao_cai_por_um_campo_que_ele_nem_publica() -> None:
     assert fora.public_result.evidence is not None
     # O v1 nunca teve o campo; o que se prova aqui é que ele não derruba mais por causa dele.
     assert not hasattr(fora.public_result.evidence[0], "excerpt")
+
+
+@pytest.mark.parametrize(
+    "entrada",
+    [
+        pytest.param(None, id="None"),
+        pytest.param("", id="vazio"),
+        pytest.param("   ", id="so-espaco"),
+        pytest.param(b"bytes", id="bytes"),
+        pytest.param(123, id="int"),
+        pytest.param(["lista"], id="lista"),
+        pytest.param({"d": 1}, id="dict"),
+        pytest.param(object(), id="objeto"),
+        # Achado da revisao independente: a guarda de tipo separava nao-`str`, e uma SUBCLASSE
+        # hostil de `str` passava por ela e levantava dentro do `re`. A promessa e absoluta.
+        pytest.param(_StrHostil("x"), id="subclasse-hostil-de-str"),
+    ],
+)
+def test_trecho_publicavel_NUNCA_levanta(entrada: object) -> None:
+    """A docstring dela promete "nunca levanta", e a promessa precisa de caso.
+
+    Sem as guardas, `bytes`, `int` e `list` levantavam `TypeError` dentro do `re` — a promessa
+    escrita era mais forte que o código. Inalcançável pelo caminho contratado
+    (`FactEvidenceSummary.excerpt` é `str | None`, validado pelo pydantic antes), mas a função é
+    exportada, e quem a chama de fora não tem essa garantia.
+
+    Vazio também vira `None`: publicar `""` faz a tela desenhar uma citação em branco, que afirma
+    "o trecho é este" apontando para nada.
+    """
+    from result_assembler.validation.safety import trecho_publicavel
+
+    assert trecho_publicavel(entrada, "evidence[0].excerpt") is None
+
+
+def test_trecho_publicavel_devolve_o_texto_quando_ele_PODE_sair() -> None:
+    """A guarda do caso acima: uma implementação que devolvesse `None` sempre passaria nele."""
+    from result_assembler.validation.safety import trecho_publicavel
+
+    texto = "Confirmei o horario e enviei o comprovante"
+
+    assert trecho_publicavel(texto, "evidence[0].excerpt") == texto
