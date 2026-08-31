@@ -138,10 +138,12 @@ def test_o_v3_e_valido_contra_o_PROPRIO_schema() -> None:
 def test_as_TRES_versoes_de_ENTRADA_sao_aceitas() -> None:
     # Igualdade e nao `in`: o conjunto e a afirmacao. Uma versao a mais aceita sem passar
     # por aqui seria exatamente o "melhor esforco" que `validate_facts` existe para impedir.
+    from result_assembler import FACTS_SCHEMA_V4_VERSION
     assert SUPPORTED_FACTS_SCHEMA_VERSIONS == {
         FACTS_SCHEMA_VERSION,
         FACTS_SCHEMA_V2_VERSION,
         FACTS_SCHEMA_V3_VERSION,
+        FACTS_SCHEMA_V4_VERSION,
     }
 
 

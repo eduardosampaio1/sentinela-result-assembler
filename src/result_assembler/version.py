@@ -103,7 +103,7 @@ from __future__ import annotations
 #: Junto: `assemble_v3` passou a chamar `validate_evidence_safety`, que ele NUNCA chamava. O v1
 #: e o v2 chamavam; o caminho de producao era o unico sem varredura de conteudo. E a varredura
 #: passou a cobrir `alerts`, por onde um trecho de conversa vazava sem contrato nem teto.
-ASSEMBLER_VERSION = "0.9.3"
+ASSEMBLER_VERSION = "1.0.0"
 
 # ⚠️ 0.9.3 — `intent_id` e `affected_intents` sao texto DO CLIENTE, e a regua deles mudou.
 #
@@ -199,9 +199,11 @@ FACTS_SCHEMA_V2_VERSION = "analysis-facts-v2"
 #: (`scores`, `risks`, `projections`, `intents`) e o bloco de METODO. Subclasse, e nao
 #: campos opcionais no v2, pela mesma razao que o v2 nao virou campo opcional no v1.
 FACTS_SCHEMA_V3_VERSION = "analysis-facts-v3"
+FACTS_SCHEMA_V4_VERSION = "analysis-facts-v4"
 
 #: Contrato de SAIDA publico do ARGOS completo. Nao carrega Analytics.
 RESULT_SCHEMA_V3_VERSION = "analysis-result-v3"
+RESULT_SCHEMA_V4_VERSION = "analysis-result-v4"
 
 #: Versões do contrato de MEDIÇÃO que este assembler sabe interpretar. Fail-closed:
 #: uma versão fora desta lista é recusada, nunca montada "no melhor esforço".
@@ -209,5 +211,5 @@ SUPPORTED_MEASUREMENT_CONTRACT_VERSIONS: frozenset[str] = frozenset({"measuremen
 
 #: Versões do contrato de ENTRADA aceitas.
 SUPPORTED_FACTS_SCHEMA_VERSIONS: frozenset[str] = frozenset(
-    {FACTS_SCHEMA_VERSION, FACTS_SCHEMA_V2_VERSION, FACTS_SCHEMA_V3_VERSION}
+    {FACTS_SCHEMA_VERSION, FACTS_SCHEMA_V2_VERSION, FACTS_SCHEMA_V3_VERSION, FACTS_SCHEMA_V4_VERSION}
 )

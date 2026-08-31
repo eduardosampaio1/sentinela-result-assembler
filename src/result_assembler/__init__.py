@@ -27,6 +27,7 @@ from pydantic import ValidationError
 
 from result_assembler.assembler.assemble import AssemblyOutcome, assemble
 from result_assembler.assembler.assemble_v3 import AssemblyV3Outcome, assemble_v3
+from result_assembler.assembler.assemble_v4 import AssemblyV4Outcome, assemble_v4
 from result_assembler.assembler.assemble_v2 import (
     AssemblyOutcomeV2,
     RecordCountMismatch,
@@ -37,6 +38,7 @@ from result_assembler.contracts.facts import (
     AnalysisFacts,
     AnalysisFactsV2,
     AnalysisFactsV3,
+    AnalysisFactsV4,
     AnalysisWindow,
     Availability,
     CalculationProvenance,
@@ -76,6 +78,7 @@ from result_assembler.contracts.result_v2 import (
     PublicResultV2,
     PublicSummaryV2,
 )
+from result_assembler.contracts.result_v4 import PublicResultV4
 from result_assembler.errors import (
     AssemblyError,
     AssemblyInvariantViolation,
@@ -109,8 +112,10 @@ from result_assembler.version import (
     ASSEMBLER_VERSION,
     FACTS_SCHEMA_V2_VERSION,
     FACTS_SCHEMA_V3_VERSION,
+    FACTS_SCHEMA_V4_VERSION,
     FACTS_SCHEMA_VERSION,
     RESULT_SCHEMA_V2_VERSION,
+    RESULT_SCHEMA_V4_VERSION,
     RESULT_SCHEMA_VERSION,
     SUPPORTED_FACTS_SCHEMA_VERSIONS,
     SUPPORTED_MEASUREMENT_CONTRACT_VERSIONS,
@@ -139,6 +144,7 @@ def _campos_contratados() -> frozenset[str]:
         FactIssue,
         FactExecutiveSummary,
         AnalysisFactsV3,
+        AnalysisFactsV4,
         FactMedida,
         FactScore,
         FactRisk,
@@ -195,6 +201,7 @@ _CLASSE_POR_VERSAO: dict[str, type[AnalysisFacts]] = {
     FACTS_SCHEMA_VERSION: AnalysisFacts,
     FACTS_SCHEMA_V2_VERSION: AnalysisFactsV2,
     FACTS_SCHEMA_V3_VERSION: AnalysisFactsV3,
+    FACTS_SCHEMA_V4_VERSION: AnalysisFactsV4,
 }
 
 
@@ -240,10 +247,12 @@ __all__ = [
     "CHECKSUM_ALGORITHM",
     "FACTS_SCHEMA_V2_VERSION",
     "FACTS_SCHEMA_V3_VERSION",
+    "FACTS_SCHEMA_V4_VERSION",
     "FACTS_SCHEMA_VERSION",
     "INDICATOR_REGISTRY",
     "INDICATOR_REGISTRY_VERSION",
     "RESULT_SCHEMA_V2_VERSION",
+    "RESULT_SCHEMA_V4_VERSION",
     "RESULT_SCHEMA_VERSION",
     "SUPPORTED_DIMENSION_IDS",
     "SUPPORTED_FACTS_SCHEMA_VERSIONS",
@@ -251,12 +260,14 @@ __all__ = [
     "AnalysisFacts",
     "AnalysisFactsV2",
     "AnalysisFactsV3",
+    "AnalysisFactsV4",
     "AnalysisWindow",
     "AnalyticsComponent",
     "AssemblyError",
     "AssemblyInvariantViolation",
     "AssemblyOutcome",
     "AssemblyOutcomeV2",
+    "AssemblyV4Outcome",
     "Availability",
     "CalculationProvenance",
     "ComponentStatus",
@@ -294,6 +305,7 @@ __all__ = [
     "PublicRecommendation",
     "PublicResult",
     "PublicResultV2",
+    "PublicResultV4",
     "PublicSummary",
     "PublicSummaryV2",
     "Reason",
@@ -306,6 +318,7 @@ __all__ = [
     "VersionsSeen",
     "assemble",
     "assemble_v3",
+    "assemble_v4",
     "AssemblyV3Outcome",
     "assemble_v2",
     "checksum",

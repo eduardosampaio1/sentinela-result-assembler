@@ -18,11 +18,11 @@ from __future__ import annotations
 
 import math
 from enum import Enum
-from typing import Any
+from typing import Any, Final
 
-from typing import Final
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
+from result_assembler.contracts.economics import EconomicsAssessment, WorkloadProfile
 
 
 class FactsModel(BaseModel):
@@ -376,7 +376,7 @@ class AnalysisFactsV2(AnalysisFacts):
     executive_summary: FactExecutiveSummary | None = None
 
     @model_validator(mode="after")
-    def _declara_a_versao_certa(self) -> "AnalysisFactsV2":
+    def _declara_a_versao_certa(self) -> AnalysisFactsV2:
         from result_assembler.version import FACTS_SCHEMA_V2_VERSION
 
         if self.facts_schema_version != FACTS_SCHEMA_V2_VERSION:
@@ -639,7 +639,7 @@ class AnalysisFactsV3(AnalysisFactsV2):
     method: FactMethod | None = None
 
     @model_validator(mode="after")
-    def _declara_a_versao_certa(self) -> "AnalysisFactsV3":
+    def _declara_a_versao_certa(self) -> AnalysisFactsV3:
         from result_assembler.version import FACTS_SCHEMA_V3_VERSION
 
         if self.facts_schema_version != FACTS_SCHEMA_V3_VERSION:
@@ -647,4 +647,22 @@ class AnalysisFactsV3(AnalysisFactsV2):
                 f"`AnalysisFactsV3` exige `{FACTS_SCHEMA_V3_VERSION}`; recebido "
                 f"`{self.facts_schema_version}`"
             )
+        return self
+
+
+class AnalysisFactsV4(AnalysisFactsV3):
+    """v3 + workload e Economics calculados pelo domínio.
+
+    O Assembler valida as versões e transporta; não conhece nem repete fórmulas.
+    """
+
+    workload_profile: WorkloadProfile
+    economics_assessment: EconomicsAssessment
+
+    @model_validator(mode="after")
+    def _declara_a_versao_certa(self) -> AnalysisFactsV4:
+        from result_assembler.version import FACTS_SCHEMA_V4_VERSION
+
+        if self.facts_schema_version != FACTS_SCHEMA_V4_VERSION:
+            raise ValueError("AnalysisFactsV4 exige analysis-facts-v4")
         return self
