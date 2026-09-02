@@ -166,14 +166,21 @@ def _validar_contra_definicao(ind: FactIndicator, defin: IndicatorDefinition, on
     # Denominador: exigido só quando o indicador tem valor. Sem valor não há razão a
     # auditar, e exigir denominador de algo não medido seria burocracia sem verdade.
     if ind.value is not None:
-        if defin.denominator_kind is not None:
+        expected_denominator_kind = (
+            defin.denominator_kind_by_version.get(
+                ind.calculation_version, defin.denominator_kind
+            )
+            if defin.denominator_kind_by_version
+            else defin.denominator_kind
+        )
+        if expected_denominator_kind is not None:
             if ind.denominator is None:
                 raise InvalidDenominator(
                     "indicador exige denominador quando há valor", location=f"{onde}.denominator"
                 )
-            if ind.denominator.kind != defin.denominator_kind:
+            if ind.denominator.kind != expected_denominator_kind:
                 raise InvalidDenominator(
-                    f"denominador precisa ser '{defin.denominator_kind}'",
+                    f"denominador precisa ser '{expected_denominator_kind}'",
                     location=f"{onde}.denominator.kind",
                 )
         elif ind.denominator is not None:

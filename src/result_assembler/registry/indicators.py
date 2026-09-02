@@ -46,6 +46,7 @@ INDICATOR_REGISTRY_VERSION = INDICATOR_REGISTRY_VERSION_V1
 #: Versões de cálculo aceitas nesta release. Hoje há uma só; a exigência de que o
 #: produtor DECLARE a versão é o ponto — sem ela não há como recusar um número velho.
 _V1 = frozenset({"1.0"})
+_V1_AND_V1_1 = frozenset({"1.0", "1.1"})
 
 _ECONOMICS = "engine.business.cost_estimators.estimate_useful_outcome_economics"
 _TENANT = "engine.business.unit_economics.compute_tenant_metrics"
@@ -81,10 +82,17 @@ class IndicatorDefinition:
     allowed_availability: frozenset[Availability]
     accepted_calculation_versions: frozenset[str]
     accepted_sources: frozenset[str]
+    denominator_kind_by_version: Mapping[str, str] | None = None
 
 
 def _razao(
-    public_id: str, description: str, denom: str, source: str, precision: int = 4
+    public_id: str,
+    description: str,
+    denom: str,
+    source: str,
+    precision: int = 4,
+    accepted_versions: frozenset[str] = _V1,
+    denominator_by_version: Mapping[str, str] | None = None,
 ) -> IndicatorDefinition:
     return IndicatorDefinition(
         public_id=public_id,
@@ -95,8 +103,9 @@ def _razao(
         valid_range=(0.0, 1.0),
         display_precision=precision,
         allowed_availability=_QUALQUER_ESTADO,
-        accepted_calculation_versions=_V1,
+        accepted_calculation_versions=accepted_versions,
         accepted_sources=frozenset({source}),
+        denominator_kind_by_version=denominator_by_version,
     )
 
 
@@ -142,9 +151,14 @@ _DEFINICOES: dict[str, IndicatorDefinition] = {
     # ── razões (0..1) ────────────────────────────────────────────────────────────
     "useful_rate": _razao(
         "useful_outcome_rate",
-        "Fração das conversas analisadas com desfecho útil, conforme o domínio.",
-        "analyzed_conversations",
+        "Fração dos desfechos interpretáveis classificados como úteis pelo mapping.",
+        "interpretable_outcomes",
         _ECONOMICS,
+        accepted_versions=_V1_AND_V1_1,
+        denominator_by_version={
+            "1.0": "analyzed_conversations",
+            "1.1": "interpretable_outcomes",
+        },
     ),
     # Nome público EXPLÍCITO: o produtor chama de `outcome_coverage`, mas o que ele mede
     # é a presença do campo `outcome` — não cobertura de intenções. Publicar como
@@ -225,7 +239,8 @@ _DEFINICOES: dict[str, IndicatorDefinition] = {
     # 25 exige, e e o nome que separa esta das tres observadas.
     "estimated_handoff_cost": _moeda(
         "estimated_handoff_cost",
-        "Custo de handoff ESTIMADO a partir do risco de contencao e de premissas de negocio configuradas. Cenario, nao observacao.",
+        "Custo de handoff ESTIMADO a partir do risco de contencao e de premissas "
+        "de negocio configuradas. Cenario, nao observacao.",
         _ECONOMICS,
     ),
     "cost_per_session": _moeda(
@@ -249,7 +264,8 @@ _DEFINICOES: dict[str, IndicatorDefinition] = {
     ),
     "covered_intents": _contagem(
         "covered_intents_count",
-        "Quantidade de intencoes com amostra suficiente para analise, conforme o piso de amostra do metodo.",
+        "Quantidade de intencoes com amostra suficiente para analise, conforme o piso "
+        "de amostra do metodo.",
         _TENANT,
         unit="intents",
     ),
@@ -311,7 +327,8 @@ CANONICAL_ORDER_V1: tuple[str, ...] = (
 
 #: O v3 é a V1 mais o que estreou nele. Acrescentar aqui é a ÚNICA forma de uma saída nova
 #: chegar ao público sem tocar em versão congelada.
-CANONICAL_ORDER_V3: tuple[str, ...] = CANONICAL_ORDER_V1 + (
+CANONICAL_ORDER_V3: tuple[str, ...] = (
+    *CANONICAL_ORDER_V1,
     "estimated_handoff_cost",
     "intents_detected",
     "covered_intents",
