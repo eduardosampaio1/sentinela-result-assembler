@@ -127,6 +127,7 @@ class CostComparison(EconomicsModel):
     price_effective_at: str | None = None
     calculation_version: str | None = None
     normalized_costs: NormalizedCosts | None = None
+    unknown_priced_dimensions: tuple[str, ...] = ()
 
 
 class EconomicsAssessment(EconomicsModel):
@@ -136,6 +137,7 @@ class EconomicsAssessment(EconomicsModel):
     detail_code: str | None = None
     registry: PricingRegistryRef | None
     current_model: CurrentModel | None = None
+    current_model_comparison: CostComparison | None = None
     comparisons: tuple[CostComparison, ...]
     inference_comparisons: tuple[CostComparison, ...] = ()
     embedding_comparisons: tuple[CostComparison, ...] = ()

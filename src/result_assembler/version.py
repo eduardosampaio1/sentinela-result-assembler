@@ -103,7 +103,7 @@ from __future__ import annotations
 #: Junto: `assemble_v3` passou a chamar `validate_evidence_safety`, que ele NUNCA chamava. O v1
 #: e o v2 chamavam; o caminho de producao era o unico sem varredura de conteudo. E a varredura
 #: passou a cobrir `alerts`, por onde um trecho de conversa vazava sem contrato nem teto.
-ASSEMBLER_VERSION = "1.0.1"
+ASSEMBLER_VERSION = "1.0.2"
 
 # ⚠️ 0.9.3 — `intent_id` e `affected_intents` sao texto DO CLIENTE, e a regua deles mudou.
 #
@@ -211,5 +211,10 @@ SUPPORTED_MEASUREMENT_CONTRACT_VERSIONS: frozenset[str] = frozenset({"measuremen
 
 #: Versões do contrato de ENTRADA aceitas.
 SUPPORTED_FACTS_SCHEMA_VERSIONS: frozenset[str] = frozenset(
-    {FACTS_SCHEMA_VERSION, FACTS_SCHEMA_V2_VERSION, FACTS_SCHEMA_V3_VERSION, FACTS_SCHEMA_V4_VERSION}
+    {
+        FACTS_SCHEMA_VERSION,
+        FACTS_SCHEMA_V2_VERSION,
+        FACTS_SCHEMA_V3_VERSION,
+        FACTS_SCHEMA_V4_VERSION,
+    }
 )
