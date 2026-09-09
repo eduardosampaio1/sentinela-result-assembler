@@ -28,21 +28,21 @@ arquitetura de dois motores independentes. Logo o primeiro contrato coerente é 
 
 ## 2. Aritmética do catálogo — o gate zero
 
-**34 documentadas + 5 descobertas = 39 outputs quantitativos.**
+**34 documentadas + 12 extensões catalogadas = 46 outputs quantitativos.**
 
 | família | n |
 |---|---|
 | `scores[]` | 7 |
 | `dimensions[]` | 4 |
-| `indicators[]` | 18 |
+| `indicators[]` | 25 |
 | `intents[]` | 1 |
 | `risks[]` | 2 |
 | `projections[]` | 4 |
 | `method.method_parameters` | 1 |
 | **bloqueados** | **2** |
-| **total** | **39** |
+| **total** | **46** |
 
-**37 publicáveis + 2 bloqueados = 39.** A lista nominal é
+**44 publicáveis + 2 bloqueados = 46.** A lista nominal é
 `result_assembler/registry/argos_catalog.py`; o gate é `tests/test_catalogo_argos.py`.
 
 ### 2.1 A regra da família única
@@ -477,7 +477,7 @@ novo é necessário no envelope para negociar.
 
 | # | gate | o defeito que ele teria pego |
 |---|---|---|
-| G1 | **Catálogo nominal** — 39, família única, sem alias | as 21 ausências silenciosas e os 5 extras fora do catálogo |
+| G1 | **Catálogo nominal** — 46, família única, sem alias | ausências silenciosas e extensões fora do catálogo |
 | G2 | **Engine → publication completeness** — todo output autorizado vira fato ou tem bloqueio testado | o desaparecimento silencioso |
 | G3 | **Fixture representativa** — "resposta literal da API" percorre o caminho real, com os mesmos argumentos do chamador de produção | `currency="USD"` no teste × `None` na produção |
 | G4 | **Currency** — sem moeda ⇒ monetários `not_measured`/`dependency_unavailable`; com moeda ⇒ valores | o defeito medido na Fase E |

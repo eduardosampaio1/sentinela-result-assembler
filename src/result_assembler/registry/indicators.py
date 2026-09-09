@@ -37,7 +37,7 @@ from result_assembler.contracts.facts import Availability, IndicatorKind
 #: fixasse `1.0` resolveria conjuntos diferentes conforme a data — a propriedade que o lock
 #: do wheel protege com `(versão, sha256)`.
 INDICATOR_REGISTRY_VERSION_V1 = "indicator-registry-1.0"
-INDICATOR_REGISTRY_VERSION_V3 = "indicator-registry-1.1"
+INDICATOR_REGISTRY_VERSION_V3 = "indicator-registry-1.2"
 
 #: Apelido de compatibilidade, pelo mesmo motivo de `CANONICAL_ORDER`: o valor exportado
 #: nasceu descrevendo os catorze.
@@ -290,6 +290,34 @@ _DEFINICOES: dict[str, IndicatorDefinition] = {
         accepted_calculation_versions=_V1,
         accepted_sources=frozenset({_TENANT}),
     ),
+    "empty_response_rate": _razao(
+        "empty_response_rate", "Fração de respostas vazias observadas.",
+        "analyzed_conversations", "engine.analyzers.response_quality.detect_response_quality",
+    ),
+    "error_response_rate": _razao(
+        "error_response_rate", "Fração de respostas com marcador explícito de erro.",
+        "analyzed_conversations", "engine.analyzers.response_quality.detect_response_quality",
+    ),
+    "refusal_response_rate": _razao(
+        "refusal_response_rate", "Fração de respostas com marcador lexical de recusa. Uma recusa pode ser correta.",
+        "analyzed_conversations", "engine.analyzers.response_quality.detect_response_quality",
+    ),
+    "vague_response_rate": _razao(
+        "vague_response_rate", "Fração de respostas vagas segundo detector lexical versionado.",
+        "analyzed_conversations", "engine.analyzers.response_quality.detect_response_quality",
+    ),
+    "rephrase_request_rate": _razao(
+        "rephrase_request_rate", "Fração de respostas que pedem reformulação ao usuário.",
+        "analyzed_conversations", "engine.analyzers.response_quality.detect_response_quality",
+    ),
+    "conversation_loop_rate": _razao(
+        "conversation_loop_rate", "Fração de respostas repetidas dentro da mesma conversa.",
+        "analyzed_conversations", "engine.analyzers.response_quality.detect_response_quality",
+    ),
+    "response_quality_eligible_count": _contagem(
+        "response_quality_eligible_count", "Respostas elegíveis para os detectores determinísticos de qualidade.",
+        "engine.analyzers.response_quality.detect_response_quality", unit="conversations",
+    ),
 }
 
 #: Só leitura: ninguém registra indicador em tempo de execução.
@@ -333,6 +361,13 @@ CANONICAL_ORDER_V3: tuple[str, ...] = (
     "intents_detected",
     "covered_intents",
     "critical_alerts",
+    "empty_response_rate",
+    "error_response_rate",
+    "refusal_response_rate",
+    "vague_response_rate",
+    "rephrase_request_rate",
+    "conversation_loop_rate",
+    "response_quality_eligible_count",
 )
 
 #: Compatibilidade: `CANONICAL_ORDER` é API pública do pacote (`__all__`). Quando ele foi

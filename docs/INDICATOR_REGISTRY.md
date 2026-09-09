@@ -71,8 +71,8 @@ distinção é deliberada: eles não são `not_measured` — *"tentamos medir e 
 promete desperdício. Envelope resolve ausência representada como zero; não resolve métrica
 semanticamente errada.
 
-**Existe agora um catálogo nominal.** `registry/argos_catalog.py` lista os **39** outputs
-quantitativos do ARGOS — 34 do documento de produto e 5 descobertos no contrato público — e
+**Existe agora um catálogo nominal.** `registry/argos_catalog.py` lista os **46** outputs
+quantitativos do ARGOS — 34 originais e 12 extensões catalogadas — e
 `tests/test_catalogo_argos.py` prova que a conta fecha e que registro e catálogo não
 divergem. Antes disso nada comparava o que o motor produz com o que o produto publica, e
 foi por isso que 26 métricas puderam sumir sem ninguém recusar nenhuma.

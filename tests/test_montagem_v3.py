@@ -176,6 +176,12 @@ _ESCALA_ESPERADA: dict[str, ScaleKind] = {
     "outcome_field_coverage_rate": ScaleKind.RATIO_UNIT,
     "conversion_rate": ScaleKind.RATIO_UNIT,
     "intent_coverage_rate": ScaleKind.RATIO_UNIT,
+    "empty_response_rate": ScaleKind.RATIO_UNIT,
+    "error_response_rate": ScaleKind.RATIO_UNIT,
+    "refusal_response_rate": ScaleKind.RATIO_UNIT,
+    "vague_response_rate": ScaleKind.RATIO_UNIT,
+    "rephrase_request_rate": ScaleKind.RATIO_UNIT,
+    "conversation_loop_rate": ScaleKind.RATIO_UNIT,
     # contagens — sem teto, e não precisam de um
     "analyzed_conversation_count": ScaleKind.COUNT,
     "useful_outcome_count": ScaleKind.COUNT,
@@ -184,6 +190,7 @@ _ESCALA_ESPERADA: dict[str, ScaleKind] = {
     "intents_detected_count": ScaleKind.COUNT,
     "covered_intents_count": ScaleKind.COUNT,
     "critical_alert_count": ScaleKind.COUNT,
+    "response_quality_eligible_count": ScaleKind.COUNT,
     # moeda — faixa aberta; o que ela precisa é da MOEDA, não de um máximo
     "total_estimated_cost": ScaleKind.CURRENCY,
     "token_cost_total": ScaleKind.CURRENCY,

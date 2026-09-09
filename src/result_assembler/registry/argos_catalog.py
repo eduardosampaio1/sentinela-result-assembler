@@ -29,13 +29,14 @@ desta spec cometeu: `Response Variance` aparecia como score global **e** como
 roupas — um alias implícito, que infla a contagem e faz parecer que há mais publicação do
 que existe. O gate reprova isso pela unicidade do `public_id`.
 
-## Os 39
+## Os 46
 
 34 do documento oficial + 5 descobertas no contrato público durante o discovery
 (`outcome_field_coverage_rate`, `conversion_rate`, `conversion_count`, `handoff_count`,
 `cost_per_session`). As cinco são ARGOS legítimas — vêm de
 `estimate_useful_outcome_economics` / `compute_tenant_metrics` e passam pelo allow-list de
-`source` —, apenas nunca foram descritas no documento. Elas não substituem nenhuma das 34.
+`source` —, apenas nunca foram descritas no documento. Sete sinais de qualidade
+conversacional observável foram adicionados no catálogo 1.1. Nenhum substitui as 34.
 """
 
 from __future__ import annotations
@@ -45,11 +46,11 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 #: Versão do catálogo. Muda quando um output entra, sai, muda de família ou de estado.
-ARGOS_CATALOG_VERSION = "argos-catalog-1.0"
+ARGOS_CATALOG_VERSION = "argos-catalog-1.1"
 
 #: Quantos vieram do documento oficial, e quantos foram descobertos no contrato.
 DOCUMENTADAS = 34
-DESCOBERTAS = 5
+DESCOBERTAS = 12
 
 
 class Familia:
@@ -104,7 +105,7 @@ class OutputArgos:
     """Um output quantitativo declarado pelo ARGOS."""
 
     numero: int
-    """Posição nominal, 1..39. Contígua por construção — o gate verifica."""
+    """Posição nominal, 1..46. Contígua por construção — o gate verifica."""
 
     nome: str
     """Nome do catálogo de produto, como a pessoa o lê."""
@@ -199,6 +200,19 @@ _CATALOGO: tuple[OutputArgos, ...] = (
     OutputArgos(38, "Handoff Count", Familia.INDICATORS, "handoff_count",
                 nota="o documento lista os CUSTOS de handoff, não a contagem"),
     OutputArgos(39, "Cost per Session", Familia.INDICATORS, "cost_per_session"),
+    # ── Qualidade conversacional observável ────────────────────────────────────────────
+    # Sinais lexicais versionados: úteis para localizar fricção, mas não equivalem a
+    # sucesso de jornada. O catálogo mantém essa fronteira explícita.
+    OutputArgos(40, "Empty Response Rate", Familia.INDICATORS, "empty_response_rate"),
+    OutputArgos(41, "Error Response Rate", Familia.INDICATORS, "error_response_rate"),
+    OutputArgos(42, "Refusal Response Rate", Familia.INDICATORS, "refusal_response_rate",
+                nota="recusa pode ser o comportamento correto diante de risco"),
+    OutputArgos(43, "Vague Response Rate", Familia.INDICATORS, "vague_response_rate"),
+    OutputArgos(44, "Rephrase Request Rate", Familia.INDICATORS, "rephrase_request_rate"),
+    OutputArgos(45, "Conversation Loop Rate", Familia.INDICATORS, "conversation_loop_rate"),
+    OutputArgos(46, "Response Quality Eligible Count", Familia.INDICATORS,
+                "response_quality_eligible_count",
+                nota="denominador observado dos detectores determinísticos"),
 )
 
 CATALOGO: tuple[OutputArgos, ...] = _CATALOGO

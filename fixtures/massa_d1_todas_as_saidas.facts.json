@@ -225,6 +225,82 @@
       "unit": "alerts",
       "calculation_version": "1.0",
       "source": "core.sentinela_engine.run_sentinela"
+    },
+    {
+      "id": "empty_response_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.01,
+      "unit": "ratio",
+      "calculation_version": "1.0",
+      "source": "engine.analyzers.response_quality.detect_response_quality",
+      "denominator": {"kind": "analyzed_conversations", "value": 100}
+    },
+    {
+      "id": "error_response_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.02,
+      "unit": "ratio",
+      "calculation_version": "1.0",
+      "source": "engine.analyzers.response_quality.detect_response_quality",
+      "denominator": {"kind": "analyzed_conversations", "value": 100}
+    },
+    {
+      "id": "refusal_response_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.03,
+      "unit": "ratio",
+      "calculation_version": "1.0",
+      "source": "engine.analyzers.response_quality.detect_response_quality",
+      "denominator": {"kind": "analyzed_conversations", "value": 100}
+    },
+    {
+      "id": "vague_response_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.04,
+      "unit": "ratio",
+      "calculation_version": "1.0",
+      "source": "engine.analyzers.response_quality.detect_response_quality",
+      "denominator": {"kind": "analyzed_conversations", "value": 100}
+    },
+    {
+      "id": "rephrase_request_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.05,
+      "unit": "ratio",
+      "calculation_version": "1.0",
+      "source": "engine.analyzers.response_quality.detect_response_quality",
+      "denominator": {"kind": "analyzed_conversations", "value": 100}
+    },
+    {
+      "id": "conversation_loop_rate",
+      "kind": "ratio",
+      "availability": "available",
+      "reason": "ok",
+      "value": 0.06,
+      "unit": "ratio",
+      "calculation_version": "1.0",
+      "source": "engine.analyzers.response_quality.detect_response_quality",
+      "denominator": {"kind": "analyzed_conversations", "value": 100}
+    },
+    {
+      "id": "response_quality_eligible_count",
+      "kind": "count",
+      "availability": "available",
+      "reason": "ok",
+      "value": 100,
+      "unit": "conversations",
+      "calculation_version": "1.0",
+      "source": "engine.analyzers.response_quality.detect_response_quality"
     }
   ],
   "dimensions": [],

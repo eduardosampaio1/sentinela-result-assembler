@@ -302,7 +302,7 @@ def test_o_v2_acompanha_o_v1_e_nao_o_v3() -> None:
     assert not intrusos, f"saídas novas vazaram para o v2: {intrusos}"
 
 
-def test_o_v3_publica_as_dezoito_e_comeca_pelas_quatorze_do_v1() -> None:
+def test_o_v3_publica_as_vinte_e_cinco_e_comeca_pelas_quatorze_do_v1() -> None:
     """Gate 3 — o v3 cresce, e cresce NO FIM.
 
     Derivar a ordem do v3 da do v1 preserva a posição de todo indicador antigo. Se alguém
@@ -313,7 +313,7 @@ def test_o_v3_publica_as_dezoito_e_comeca_pelas_quatorze_do_v1() -> None:
     assert publicado[: len(ORDEM_V1_CONGELADA)] == ORDEM_V1_CONGELADA, (
         "o v3 não começa pela ordem do v1: indicador antigo mudou de posição"
     )
-    assert len(publicado) == 18, f"o v3 publicou {len(publicado)}; esperado 18"
+    assert len(publicado) == 25, f"o v3 publicou {len(publicado)}; esperado 25"
 
 
 def test_a_versao_do_registro_distingue_os_conjuntos() -> None:

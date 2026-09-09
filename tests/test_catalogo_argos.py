@@ -8,12 +8,12 @@ producer, e **nada no sistema comparava as duas listas**. Ausência silenciosa n
 decisão de produto — e sem um gate ela é indistinguível de uma.
 
 Os casos abaixo não medem qualidade de métrica. Eles medem se a CONTABILIDADE fecha:
-39 catalogados, cada um numa família só, sem alias, sem sumiço.
+46 catalogados, cada um numa família só, sem alias, sem sumiço.
 
 ## Anti-vacuidade
 
 Um catálogo vazio faria todas as comparações passarem. Por isso a cardinalidade é
-verificada primeiro, contra as duas parcelas declaradas (34 + 5) — e não contra
+verificada primeiro, contra as duas parcelas declaradas (34 + 12) — e não contra
 `len()` de si mesmo, que é a tautologia que deixaria o gate verde sobre nada.
 """
 
@@ -56,9 +56,9 @@ def test_o_catalogo_nao_esta_vazio() -> None:
 
 
 def test_a_aritmetica_fecha_contra_as_parcelas_declaradas() -> None:
-    # 34 do documento oficial + 5 descobertas no contrato. Comparar com `len(CATALOGO)`
+    # 34 originais + 12 extensões catalogadas. Comparar com `len(CATALOGO)`
     # seria comparar a lista consigo mesma.
-    assert len(CATALOGO) == DOCUMENTADAS + DESCOBERTAS == 39
+    assert len(CATALOGO) == DOCUMENTADAS + DESCOBERTAS == 46
 
 
 def test_publicaveis_mais_bloqueados_reconstroem_o_total() -> None:
